@@ -38,7 +38,32 @@ demo.hosts | `- "example.com"` | Set the list of your hosts to generate Let's En
 
 1/ Have your Ingress Controller deployed and ready
 
-2/ Install `Certs` chart:
+2/ Register your ingress, for example:
+```
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: test-ingress
+  annotations:
+    acme.kubernetes.io/enable: "true"
+    acme.kubernetes.io/dns: "dns_gd"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - sslexample.foo.com
+    secretName: testsecret-tls
+  rules:
+  - host: sslexample.foo.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: service1
+          servicePort: 80
+```
+
+3/ Install `Certs` chart:
 ```
 # Add the `Certs` Helm repository
 helm repo add certs https://math-nao.github.io/certs/charts
@@ -66,31 +91,6 @@ env:
   value: XXXX
 - name: GD_Secret
   value: XXXX
-```
-
-3/ Now register your ingress, for example:
-```
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: test-ingress
-  annotations:
-    acme.kubernetes.io/enable: "true"
-    acme.kubernetes.io/dns: "dns_gd"
-    nginx.ingress.kubernetes.io/rewrite-target: /
-spec:
-  tls:
-  - hosts:
-    - sslexample.foo.com
-    secretName: testsecret-tls
-  rules:
-  - host: sslexample.foo.com
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: service1
-          servicePort: 80
 ```
 
 4/ Visit `https://sslexample.foo.com` webpage, you should have a valid Let's Encrypt certificate
