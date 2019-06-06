@@ -1,0 +1,5 @@
+Certs
+Copyright 2019 Mathieu Naouache
+
+This code install the acme shell script called acme.sh
+from https://github.com/Neilpang/acme.sh

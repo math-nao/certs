@@ -1,0 +1,41 @@
+{{- if .Values.demo.enabled -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "helper.fullname" . }}-demo-backend
+  labels:
+    app: {{ template "helper.name" . }}
+    chart: {{ template "helper.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    acme.cert.kubernetes.io/enable: "true"
+    acme.cert.kubernetes.io/dns: "dns_gd"
+    acme.cert.kubernetes.io/staging: "true"
+    acme.cert.kubernetes.io/debug: "true"
+    acme.cert.kubernetes.io/add-args: ""
+    acme.cert.kubernetes.io/cmd-to-use: ""
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+{{- with .Values.demo.ingress.annotations }}
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+  tls:
+  - hosts:
+    {{- with .Values.demo.hosts }}
+{{ toYaml . | indent 4 }}
+    {{- end -}}
+    secretName: {{ .Values.demo.secretName }}
+  rules:
+  {{- $main := . -}}
+  {{- range .Values.demo.hosts }}
+  - host: {{ . | quote }}
+    http:
+      paths:
+        - path: /certs-demo-backend/?(.*)
+          backend:
+            serviceName: {{ template "helper.fullname" $main }}-demo-backend
+            servicePort: {{ $main.Values.demo.service.port }}
+  {{- end -}}
+{{- end }}

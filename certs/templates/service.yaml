@@ -1,0 +1,21 @@
+{{- if .Values.demo.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "helper.fullname" . }}-demo-backend
+  labels:
+    app: {{ template "helper.name" . }}
+    chart: {{ template "helper.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.demo.service.type }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.demo.service.port }}
+      targetPort: http
+  selector:
+    app: {{ template "helper.name" . }}
+    release: {{ .Release.Name }}
+{{- end -}}

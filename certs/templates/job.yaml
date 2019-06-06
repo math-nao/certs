@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "helper.fullname" . }}
+  labels:
+    app: {{ template "helper.name" . }}
+    chart: {{ template "helper.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "helper.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      serviceAccountName: certs
+      containers:
+      - name: {{ template "helper.fullname" . }}
+        image: {{ template "helper.image" . }}
+        imagePullPolicy: Always
+        {{- if .Values.env }}
+        env:
+        {{- with .Values.env }}
+{{ toYaml . | indent 12 }}
+        {{- end }}
+        {{- end }}
+      restartPolicy: Never
+      backoffLimit: {{ .Values.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+      concurrencyPolicy: Forbid
