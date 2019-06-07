@@ -99,7 +99,7 @@ starter() {
   if [ "${STATUS_CODE}" = "200" ]; then
     format_res_file "${RES_FILE}"
     
-    local INGRESSES_FILTERED=$(cat "${RES_FILE}" | jq -c '.items | .[] | select(.metadata.annotations."acme.cert.kubernetes.io/enable"=="true")')
+    local INGRESSES_FILTERED=$(cat "${RES_FILE}" | jq -c '.items | .[] | select(.metadata.annotations."acme.kubernetes.io/enable"=="true")')
     rm -f "${RES_FILE}"
 
     if [ "${INGRESSES_FILTERED}" = "" ]; then
@@ -108,8 +108,8 @@ starter() {
     fi
 
     for ingress in ${INGRESSES_FILTERED}; do
-      CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.cert.kubernetes.io/dns"')
-      CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.cert.kubernetes.io/cmd-to-use"')
+      CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
+      CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
 
       local IS_DNS_VALID="true"
       if [ "${CERTS_DNS}" = "null" -o  "${CERTS_DNS}" = "" ]; then
@@ -131,18 +131,18 @@ starter() {
         return
       fi
 
-      CERTS_ARGS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.cert.kubernetes.io/add-args"')
+      CERTS_ARGS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/add-args"')
       if [ "${CERTS_ARGS}" = "null" -o  "${CERTS_ARGS}" = "" ]; then
         info "No cmd args found"
         # convert null to empty string
         CERTS_ARGS=""
       fi
 
-      if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.cert.kubernetes.io/staging"=="true")' | wc -l)" = "1"  ]; then
+      if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.kubernetes.io/staging"=="true")' | wc -l)" = "1"  ]; then
         CERTS_IS_STAGING="true"
       fi
 
-      if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.cert.kubernetes.io/debug"=="true")' | wc -l)" = "1"  ]; then
+      if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.kubernetes.io/debug"=="true")' | wc -l)" = "1"  ]; then
         CERTS_IS_DEBUG="true"
       fi
 
