@@ -1,11 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: certs
+  name: {{ template "helper.fullname" . }}
 subjects:
 - kind: ServiceAccount
-  name: certs
+  name: {{ template "helper.fullname" . }}
 roleRef:
   kind: Role
-  name: certs
+  name: {{ template "helper.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
