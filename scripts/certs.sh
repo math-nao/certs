@@ -155,7 +155,7 @@ starter() {
       done
     done
   else
-    verbose "Invalid status code found: ${STATUS_CODE}"
+    info "Invalid status code found: ${STATUS_CODE}"
   fi
 }
 
@@ -223,10 +223,10 @@ generate_cert() {
   RC=0
   eval "${ACME_CMD}" || RC=$? && true
 
-  echo "acme.sh return code: ${RC}"
+  info "acme.sh return code: ${RC}"
 
   if [ "${RC}" != "0" -a "${RC}" != "2" ]; then
-    echo "An acme.sh error occurred"
+    info "An acme.sh error occurred"
     exit 1
   fi
   

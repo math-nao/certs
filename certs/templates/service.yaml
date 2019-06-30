@@ -4,7 +4,7 @@ kind: Service
 metadata:
   name: {{ template "helper.fullname" . }}-demo-backend
   labels:
-    app: {{ template "helper.name" . }}
+    app: {{ template "helper.name" . }}-demo-backend
     chart: {{ template "helper.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -16,6 +16,6 @@ spec:
       port: {{ .Values.demo.service.port }}
       targetPort: http
   selector:
-    app: {{ template "helper.name" . }}
+    app: {{ template "helper.name" . }}-demo-backend
     release: {{ .Release.Name }}
 {{- end -}}
