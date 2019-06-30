@@ -1,4 +1,4 @@
-# Default values for front.
+# Default values.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -8,7 +8,7 @@ service:
 image:
   registry: mathnao
   repository: certs
-  tag: 1.0.0
+  tag: 1.0.1
 
 schedule: "0 0,12 * * *"
 
