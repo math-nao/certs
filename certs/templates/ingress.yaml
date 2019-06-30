@@ -9,12 +9,12 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   annotations:
-    acme.cert.kubernetes.io/enable: "true"
-    acme.cert.kubernetes.io/dns: "dns_gd"
-    acme.cert.kubernetes.io/staging: "true"
-    acme.cert.kubernetes.io/debug: "true"
-    acme.cert.kubernetes.io/add-args: ""
-    acme.cert.kubernetes.io/cmd-to-use: ""
+    acme.kubernetes.io/enable: "true"
+    acme.kubernetes.io/dns: "dns_gd"
+    acme.kubernetes.io/staging: "true"
+    acme.kubernetes.io/debug: "true"
+    acme.kubernetes.io/add-args: ""
+    acme.kubernetes.io/cmd-to-use: ""
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
 {{- with .Values.demo.ingress.annotations }}
