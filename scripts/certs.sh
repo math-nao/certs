@@ -178,7 +178,7 @@ generate_cert() {
   shift
   local DOMAINS="$@"
 
-  debug "Generate certs for" \
+  info "Generate certs for" \
    " dns: ${CERTS_DNS}," \
    " is_staging: ${CERTS_IS_STAGING}," \
    " is_debug: ${CERTS_IS_DEBUG}," \
@@ -193,6 +193,7 @@ generate_cert() {
 
   # get previous conf if it exists
   load_conf_from_secret
+  check_cert_from_secret
 
   # prepare acme cmd args
   ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --key-file '${ACME_KEY_FILE}'"
@@ -226,7 +227,7 @@ generate_cert() {
   fi
 
   MAIN_DOMAIN="$(echo "${DOMAINS}" | cut -d' ' -f1)"
-  echo "main domain: ${MAIN_DOMAIN}"
+  info "main domain: ${MAIN_DOMAIN}"
   
   # get the domain root used by acme
   local DOMAIN_NAME_ROOT=$(get_domain_root "${MAIN_DOMAIN}")
@@ -320,6 +321,15 @@ load_conf_from_secret() {
   fi
 
   rm -f "${RES_FILE}"
+}
+
+check_cert_from_secret() {
+  info "Checking if cert in secret..."
+
+  local STATUS_CODE=$(k8s_api_call "GET" /api/v1/namespaces/${NAMESPACE}/secrets/${CERTS_SECRET_NAME} 2>/dev/null)
+  if [ "${STATUS_CODE}" = "200" ]; then
+    IS_SECRET_CERTS_ALREADY_EXISTS="true"
+  fi
 }
 
 add_conf_to_secret() {
