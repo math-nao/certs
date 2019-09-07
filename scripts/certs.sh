@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright 2019 Mathieu Naouache
 
 set -e
@@ -77,14 +77,23 @@ format_res_file() {
 }
 
 get_domain_root() {
-  local DOMAIN_FOUND=$(find /acme.sh/*.* -type d | head -1)
+  local DOMAIN="$1"
+
+  # ecc certificates has a different directory name
+  DOMAIN_FOUND=$(find /acme.sh/"${DOMAIN}_ecc" -type d 2>/dev/null | head -1)
+  if [ "${DOMAIN_FOUND}" != "" ]; then
+    echo $(basename "${DOMAIN_FOUND}" 2>/dev/null)
+  fi
+
+  local DOMAIN_FOUND=$(find /acme.sh/"${DOMAIN}" -type d 2>/dev/null | head -1)
   if [ "${DOMAIN_FOUND}" != "" ]; then
     echo $(basename "${DOMAIN_FOUND}" 2>/dev/null)
   fi
 }
 
 get_cert_hash() {
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
+  local DOMAIN="$1"
+  local DOMAIN_NAME_ROOT=$(get_domain_root "${DOMAIN}")
   if [ "${DOMAIN_NAME_ROOT}" != "" ]; then
     echo $(md5sum "/acme.sh/${DOMAIN_NAME_ROOT}/fullchain.cer")
   fi
@@ -107,7 +116,12 @@ starter() {
       return
     fi
 
+    IFS=$'\n'
     for ingress in ${INGRESSES_FILTERED}; do
+      unset IFS
+      IS_SECRET_CERTS_ALREADY_EXISTS="false"
+      IS_SECRET_CONF_ALREADY_EXISTS="false"
+
       CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
       CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
 
@@ -210,13 +224,17 @@ generate_cert() {
   if [ "${CERTS_CMD_TO_USE}" != "" ]; then
     ACME_CMD="${CERTS_CMD_TO_USE}"
   fi
+
+  MAIN_DOMAIN="$(echo "${DOMAINS}" | cut -d' ' -f1)"
+  echo "main domain: ${MAIN_DOMAIN}"
   
   # get the domain root used by acme
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
+  local DOMAIN_NAME_ROOT=$(get_domain_root "${MAIN_DOMAIN}")
   debug "domain name root: ${DOMAIN_NAME_ROOT}"
 
   # get current cert hash
-  CURRENT_CERT_HASH=$(get_cert_hash)
+  CURRENT_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}")
+  debug "hash (before): ${CURRENT_CERT_HASH}"
 
   # generate certs
   debug "Running cmd: ${ACME_CMD}"
@@ -231,10 +249,12 @@ generate_cert() {
   fi
   
   # update domain name root after certs creation
-  DOMAIN_NAME_ROOT=$(get_domain_root)
+  DOMAIN_NAME_ROOT=$(get_domain_root "${MAIN_DOMAIN}")
+  debug "domain name root (after): ${DOMAIN_NAME_ROOT}"
 
   # get new cert hash
-  NEW_CERT_HASH=$(get_cert_hash)
+  NEW_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}")
+  debug "hash (after): ${CURRENT_CERT_HASH}"
 
   # update secrets only if certs has been updated
   if [ "${CURRENT_CERT_HASH}" != "${NEW_CERT_HASH}" ]; then
