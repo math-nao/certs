@@ -10,6 +10,8 @@ image:
   repository: certs
   tag: 1.0.1
 
+cluster: false
+
 schedule: "0 0,12 * * *"
 
 backoffLimit: 1
