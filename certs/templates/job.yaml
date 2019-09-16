@@ -14,7 +14,7 @@ spec:
         app: {{ template "helper.name" . }}
         release: {{ .Release.Name }}
     spec:
-      serviceAccountName: certs
+      serviceAccountName: {{ template "helper.fullname" . }}
       containers:
       - name: {{ template "helper.fullname" . }}
         image: {{ template "helper.image" . }}
