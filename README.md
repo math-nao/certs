@@ -20,6 +20,7 @@ Parameter  | Default | Description
 image.registry | `mathnao` | Set the docker image registry to use.
 image.repository | `certs` | Set the docker image repository to use.
 image.tag | `tag` | Set the docker image tag to use.
+cluster | `false` | Cluster mode allows to serve all namespaces.
 schedule | `0 0,12 * * *` | Set the job schedule to run dns validation for certificate renew.
 backoffLimit | `1` | Specify the number of retries before considering a job as failed.
 activeDeadlineSeconds | `600` | Set an active deadline for terminatting a job.

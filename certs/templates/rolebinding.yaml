@@ -1,3 +1,17 @@
+{{- if .Values.cluster -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "helper.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  namespace: {{.Release.Namespace}}
+  name: {{ template "helper.fullname" . }}
+roleRef:
+  kind: ClusterRole
+  name: {{ template "helper.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- else -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -9,3 +23,4 @@ roleRef:
   kind: Role
   name: {{ template "helper.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
+{{- end -}}

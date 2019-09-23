@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright 2019 Mathieu Naouache
 
 set -e
@@ -77,14 +77,23 @@ format_res_file() {
 }
 
 get_domain_root() {
-  local DOMAIN_FOUND=$(find /acme.sh/*.* -type d | head -1)
+  local DOMAIN="$1"
+
+  # ecc certificates has a different directory name
+  DOMAIN_FOUND=$(find /acme.sh/"${DOMAIN}_ecc" -type d 2>/dev/null | head -1)
+  if [ "${DOMAIN_FOUND}" != "" ]; then
+    echo $(basename "${DOMAIN_FOUND}" 2>/dev/null)
+  fi
+
+  local DOMAIN_FOUND=$(find /acme.sh/"${DOMAIN}" -type d 2>/dev/null | head -1)
   if [ "${DOMAIN_FOUND}" != "" ]; then
     echo $(basename "${DOMAIN_FOUND}" 2>/dev/null)
   fi
 }
 
 get_cert_hash() {
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
+  local DOMAIN="$1"
+  local DOMAIN_NAME_ROOT=$(get_domain_root "${DOMAIN}")
   if [ "${DOMAIN_NAME_ROOT}" != "" ]; then
     echo $(md5sum "/acme.sh/${DOMAIN_NAME_ROOT}/fullchain.cer")
   fi
@@ -94,69 +103,101 @@ starter() {
   info "Initialize environment..."
 
   local RES_FILE=$(mktemp /tmp/init_env.XXXX)
-  local STATUS_CODE=$(k8s_api_call "GET" "/apis/extensions/v1beta1/namespaces/${NAMESPACE}/ingresses" 2>${RES_FILE})
 
-  if [ "${STATUS_CODE}" = "200" ]; then
+  # try get namespaces (cluster mode)
+  status_code=$(k8s_api_call "GET" /api/v1/namespaces 2>"${RES_FILE}")
+  if [ "${status_code}" = "200" ]; then
+    info "Success getting all namesapces"
     format_res_file "${RES_FILE}"
-    
-    local INGRESSES_FILTERED=$(cat "${RES_FILE}" | jq -c '.items | .[] | select(.metadata.annotations."acme.kubernetes.io/enable"=="true")')
-    rm -f "${RES_FILE}"
-
-    if [ "${INGRESSES_FILTERED}" = "" ]; then
-      info "No matching ingress found"
-      return
-    fi
-
-    for ingress in ${INGRESSES_FILTERED}; do
-      CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
-      CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
-
-      local IS_DNS_VALID="true"
-      if [ "${CERTS_DNS}" = "null" -o  "${CERTS_DNS}" = "" ]; then
-        info "No dns configuration found"
-        IS_DNS_VALID="false"
-        # convert null to empty string
-        CERTS_DNS=""
-      fi
-
-      local IS_CMD_TO_USE_VALID="true"
-      if [ "${CERTS_CMD_TO_USE}" = "null" -o  "${CERTS_CMD_TO_USE}" = "" ]; then
-        info "No cmd to use found"
-        IS_CMD_TO_USE_VALID="false"
-        # convert null to empty string
-        CERTS_CMD_TO_USE=""
-      fi
-
-      if [ "${IS_DNS_VALID}" = "false" -a "${IS_CMD_TO_USE_VALID}" = "false" ]; then
-        return
-      fi
-
-      CERTS_ARGS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/add-args"')
-      if [ "${CERTS_ARGS}" = "null" -o  "${CERTS_ARGS}" = "" ]; then
-        info "No cmd args found"
-        # convert null to empty string
-        CERTS_ARGS=""
-      fi
-
-      if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.kubernetes.io/staging"=="true")' | wc -l)" = "1"  ]; then
-        CERTS_IS_STAGING="true"
-      fi
-
-      if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.kubernetes.io/debug"=="true")' | wc -l)" = "1"  ]; then
-        CERTS_IS_DEBUG="true"
-      fi
-
-      TLS_INPUTS=$(echo "${ingress}" | jq -c '.spec.tls | .[]')
-      for input in ${TLS_INPUTS}; do
-        local SECRETNAME=$(echo ${input} | jq -rc '.secretName')
-        local HOSTS=$(echo ${input} | jq -rc '.hosts | .[]' | tr '\n' ' ')
-        # no quotes on the last argument please
-        generate_cert "${SECRETNAME}" ${HOSTS}
-      done
-    done
+    namespaces=$(jq -c '.items | .[]' < "${RES_FILE}")
   else
-    info "Invalid status code found: ${STATUS_CODE}"
+    info "Invalid status code when getting namespaces: ${status_code}"
+    namespaces=NAMESPACE
   fi
+
+  # iterate over all namespaces
+  for namespace in ${namespaces}; do
+    namespace=$(echo "${namespace}" | jq -c -r '.metadata.name')
+    echo "Processing namespace ${namespace}..."
+
+    NAMESPACE=${namespace}
+
+    local STATUS_CODE=$(k8s_api_call "GET" "/apis/extensions/v1beta1/namespaces/${NAMESPACE}/ingresses" 2>${RES_FILE})
+
+    if [ "${STATUS_CODE}" = "200" ]; then
+      format_res_file "${RES_FILE}"
+
+      local INGRESSES_FILTERED=$(cat "${RES_FILE}" | jq -c '.items | .[] | select(.metadata.annotations."acme.kubernetes.io/enable"=="true")')
+      rm -f "${RES_FILE}"
+
+      if [ "${INGRESSES_FILTERED}" = "" ]; then
+        info "No matching ingress found in namespace ${NAMESPACE}"
+      fi
+
+      IFS=$'\n'
+      for ingress in ${INGRESSES_FILTERED}; do
+        unset IFS
+        IS_SECRET_CERTS_ALREADY_EXISTS="false"
+        IS_SECRET_CONF_ALREADY_EXISTS="false"
+        CERTS_DNS=""
+        CERTS_IS_STAGING="false"
+        CERTS_IS_DEBUG="false"
+        CERTS_ARGS=""
+        CERTS_CMD_TO_USE=""
+
+        CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
+        CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
+
+        local IS_DNS_VALID="true"
+        if [ "${CERTS_DNS}" = "null" -o  "${CERTS_DNS}" = "" ]; then
+          info "No dns configuration found"
+          IS_DNS_VALID="false"
+          # convert null to empty string
+          CERTS_DNS=""
+        fi
+
+        local IS_CMD_TO_USE_VALID="true"
+        if [ "${CERTS_CMD_TO_USE}" = "null" -o  "${CERTS_CMD_TO_USE}" = "" ]; then
+          info "No cmd to use found"
+          IS_CMD_TO_USE_VALID="false"
+          # convert null to empty string
+          CERTS_CMD_TO_USE=""
+        fi
+
+        if [ "${IS_DNS_VALID}" = "false" -a "${IS_CMD_TO_USE_VALID}" = "false" ]; then
+          return
+        fi
+
+        CERTS_ARGS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/add-args"')
+        if [ "${CERTS_ARGS}" = "null" -o  "${CERTS_ARGS}" = "" ]; then
+          info "No cmd args found"
+          # convert null to empty string
+          CERTS_ARGS=""
+        fi
+
+        if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.kubernetes.io/staging"=="true")' | wc -l)" = "1"  ]; then
+          CERTS_IS_STAGING="true"
+        fi
+
+        if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.kubernetes.io/debug"=="true")' | wc -l)" = "1"  ]; then
+          CERTS_IS_DEBUG="true"
+        fi
+
+        TLS_INPUTS=$(echo "${ingress}" | jq -c '.spec.tls | .[]')
+        for input in ${TLS_INPUTS}; do
+          local SECRETNAME=$(echo ${input} | jq -rc '.secretName')
+          local HOSTS=$(echo ${input} | jq -rc '.hosts | .[]' | tr '\n' ' ')
+          # no quotes on the last argument please
+          generate_cert "${SECRETNAME}" ${HOSTS}
+        done
+      done
+    else
+      info "Invalid status code found: ${STATUS_CODE}"
+    fi
+  done
+
+
+
 }
 
 generate_cert() {
@@ -164,7 +205,7 @@ generate_cert() {
   shift
   local DOMAINS="$@"
 
-  debug "Generate certs for" \
+  info "Generate certs for" \
    " dns: ${CERTS_DNS}," \
    " is_staging: ${CERTS_IS_STAGING}," \
    " is_debug: ${CERTS_IS_DEBUG}," \
@@ -179,9 +220,10 @@ generate_cert() {
 
   # get previous conf if it exists
   load_conf_from_secret
+  check_cert_from_secret
 
   # prepare acme cmd args
-  ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --key-file '${ACME_KEY_FILE}'"
+  ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --fullchain-file '${ACME_CERT_FILE}' --key-file '${ACME_KEY_FILE}'"
 
   if [ "${CERTS_IS_DEBUG}" = "true" ]; then
     ACME_ARGS="${ACME_ARGS} --debug"
@@ -210,13 +252,17 @@ generate_cert() {
   if [ "${CERTS_CMD_TO_USE}" != "" ]; then
     ACME_CMD="${CERTS_CMD_TO_USE}"
   fi
+
+  MAIN_DOMAIN="$(echo "${DOMAINS}" | cut -d' ' -f1)"
+  info "main domain: ${MAIN_DOMAIN}"
   
   # get the domain root used by acme
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
+  local DOMAIN_NAME_ROOT=$(get_domain_root "${MAIN_DOMAIN}")
   debug "domain name root: ${DOMAIN_NAME_ROOT}"
 
   # get current cert hash
-  CURRENT_CERT_HASH=$(get_cert_hash)
+  CURRENT_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}")
+  debug "hash (before): ${CURRENT_CERT_HASH}"
 
   # generate certs
   debug "Running cmd: ${ACME_CMD}"
@@ -231,10 +277,12 @@ generate_cert() {
   fi
   
   # update domain name root after certs creation
-  DOMAIN_NAME_ROOT=$(get_domain_root)
+  DOMAIN_NAME_ROOT=$(get_domain_root "${MAIN_DOMAIN}")
+  debug "domain name root (after): ${DOMAIN_NAME_ROOT}"
 
   # get new cert hash
-  NEW_CERT_HASH=$(get_cert_hash)
+  NEW_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}")
+  debug "hash (after): ${CURRENT_CERT_HASH}"
 
   # update secrets only if certs has been updated
   if [ "${CURRENT_CERT_HASH}" != "${NEW_CERT_HASH}" ]; then
@@ -300,6 +348,15 @@ load_conf_from_secret() {
   fi
 
   rm -f "${RES_FILE}"
+}
+
+check_cert_from_secret() {
+  info "Checking if cert in secret..."
+
+  local STATUS_CODE=$(k8s_api_call "GET" /api/v1/namespaces/${NAMESPACE}/secrets/${CERTS_SECRET_NAME} 2>/dev/null)
+  if [ "${STATUS_CODE}" = "200" ]; then
+    IS_SECRET_CERTS_ALREADY_EXISTS="true"
+  fi
 }
 
 add_conf_to_secret() {
