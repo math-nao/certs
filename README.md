@@ -25,6 +25,7 @@ backoffLimit | `1` | Specify the number of retries before considering a job as f
 activeDeadlineSeconds | `600` | Set an active deadline for terminatting a job.
 ttlSecondsAfterFinished | `120` | Set a TTL for cleaning a job.
 successfulJobsHistoryLimit | `3` | Specify how many completed jobs should be kept.
+manageAllNamespaces | `false` | Whether or not `certs` should manage all namespaces for generating certificates.
 failedJobsHistoryLimit | `1` | Specify how many failed jobs should be kept.
 env | `[]` | List all environment variables needed to run a `acme.sh` dns validation for certificate renew.
 demo.enabled | `false` | Enable a demo backend for test purpose.

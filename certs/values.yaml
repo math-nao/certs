@@ -22,6 +22,8 @@ successfulJobsHistoryLimit: 3
 
 failedJobsHistoryLimit: 1
 
+manageAllNamespaces: false
+
 env: []
 
 demo:

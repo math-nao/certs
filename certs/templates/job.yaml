@@ -19,11 +19,11 @@ spec:
       - name: {{ template "helper.fullname" . }}
         image: {{ template "helper.image" . }}
         imagePullPolicy: Always
-        {{- if .Values.env }}
         env:
+        - name: ACME_MANAGE_ALL_NAMESPACES
+          value: {{ .Values.manageAllNamespaces | quote }}
         {{- with .Values.env }}
-{{ toYaml . | indent 12 }}
-        {{- end }}
+{{ toYaml . | indent 8 }}
         {{- end }}
       restartPolicy: Never
       backoffLimit: {{ .Values.backoffLimit }}

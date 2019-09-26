@@ -27,6 +27,10 @@ CERTS_IS_STAGING="false"
 CERTS_IS_DEBUG="false"
 CERTS_ARGS=""
 CERTS_CMD_TO_USE=""
+K8S_API_URI_NAMESPACE="namespaces/${NAMESPACE}"
+if [ "${ACME_MANAGE_ALL_NAMESPACES}" = "true" ]; then
+  K8S_API_URI_NAMESPACE=""
+fi
 
 verbose() {
   echo "$@"
@@ -93,8 +97,14 @@ get_cert_hash() {
 starter() {
   info "Initialize environment..."
 
+  local URI="/apis/extensions/v1beta1"
+  if [ -n "${K8S_API_URI_NAMESPACE}" ]; then
+    URI="${URI}/${K8S_API_URI_NAMESPACE}"
+  fi
+  URI="${URI}/ingresses"
+
   local RES_FILE=$(mktemp /tmp/init_env.XXXX)
-  local STATUS_CODE=$(k8s_api_call "GET" "/apis/extensions/v1beta1/namespaces/${NAMESPACE}/ingresses" 2>${RES_FILE})
+  local STATUS_CODE=$(k8s_api_call "GET" "${URI}" 2>${RES_FILE})
 
   if [ "${STATUS_CODE}" = "200" ]; then
     format_res_file "${RES_FILE}"
@@ -110,6 +120,8 @@ starter() {
     for ingress in ${INGRESSES_FILTERED}; do
       CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
       CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
+
+      local CERT_NAMESPACE=$(echo "${ingress}" | jq -rc '.metadata.namespace')
 
       local IS_DNS_VALID="true"
       if [ "${CERTS_DNS}" = "null" -o  "${CERTS_DNS}" = "" ]; then
@@ -151,7 +163,7 @@ starter() {
         local SECRETNAME=$(echo ${input} | jq -rc '.secretName')
         local HOSTS=$(echo ${input} | jq -rc '.hosts | .[]' | tr '\n' ' ')
         # no quotes on the last argument please
-        generate_cert "${SECRETNAME}" ${HOSTS}
+        generate_cert "${CERT_NAMESPACE}" "${SECRETNAME}" ${HOSTS}
       done
     done
   else
@@ -160,6 +172,8 @@ starter() {
 }
 
 generate_cert() {
+  local CERT_NAMESPACE="$1"
+  shift
   local NAME="$1"
   shift
   local DOMAINS="$@"
@@ -171,6 +185,7 @@ generate_cert() {
    " args: ${CERTS_ARGS}," \
    " cmd to use: ${CERTS_CMD_TO_USE}," \
    " name: ${NAME}," \
+   " namespace: ${CERT_NAMESPACE}," \
    " domains: ${DOMAINS}"
 
   # update global variables
@@ -178,7 +193,7 @@ generate_cert() {
   CONF_SECRET_NAME="${NAME}-conf"
 
   # get previous conf if it exists
-  load_conf_from_secret
+  load_conf_from_secret "${CERT_NAMESPACE}"
 
   # prepare acme cmd args
   ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --key-file '${ACME_KEY_FILE}'"
@@ -239,8 +254,8 @@ generate_cert() {
   # update secrets only if certs has been updated
   if [ "${CURRENT_CERT_HASH}" != "${NEW_CERT_HASH}" ]; then
     info "Certificate change, updating..."
-    add_certs_to_secret
-    add_conf_to_secret "${DOMAIN_NAME_ROOT}"
+    add_certs_to_secret "${CERT_NAMESPACE}"
+    add_conf_to_secret "${CERT_NAMESPACE}" "${DOMAIN_NAME_ROOT}"
   else
     info "No certificate change, nothing to do"
   fi
@@ -248,6 +263,8 @@ generate_cert() {
 
 add_certs_to_secret() {
   info "Adding certs to secret..."
+
+  local CERT_NAMESPACE="$1"
 
   SECRET_FILE="/root/secret.certs.json"
 
@@ -264,10 +281,10 @@ add_certs_to_secret() {
   local STATUS_CODE=""
   if [ "${IS_SECRET_CERTS_ALREADY_EXISTS}" = "false" ]; then
     info "Adding certs"
-    STATUS_CODE=$(k8s_api_call "POST" /api/v1/namespaces/${NAMESPACE}/secrets --data "@${SECRET_FILE}" 2>/dev/null)
+    STATUS_CODE=$(k8s_api_call "POST" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets" --data "@${SECRET_FILE}" 2>/dev/null)
   else
     info "Updating certs"
-    STATUS_CODE=$(k8s_api_call "PUT" /api/v1/namespaces/${NAMESPACE}/secrets/${CERTS_SECRET_NAME} --data "@${SECRET_FILE}" 2>/dev/null)
+    STATUS_CODE=$(k8s_api_call "PUT" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets/${CERTS_SECRET_NAME}" --data "@${SECRET_FILE}" 2>/dev/null)
   fi
 
   debug "Status code: ${STATUS_CODE}"
@@ -283,9 +300,11 @@ add_certs_to_secret() {
 
 load_conf_from_secret() {
   info "Loading conf from secret..."
-  
+
+  local CERT_NAMESPACE="$1"
+
   local RES_FILE=$(mktemp /tmp/load_conf.XXXX)
-  local STATUS_CODE=$(k8s_api_call "GET" /api/v1/namespaces/${NAMESPACE}/secrets/${CONF_SECRET_NAME} 2>${RES_FILE})
+  local STATUS_CODE=$(k8s_api_call "GET" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets/${CONF_SECRET_NAME}" 2>${RES_FILE})
 
   if [ "${STATUS_CODE}" = "200" ]; then
     info "Adding conf"
@@ -305,6 +324,8 @@ load_conf_from_secret() {
 add_conf_to_secret() {
   info "Adding conf to secret..."
 
+  local CERT_NAMESPACE="$1"
+  shift
   local DOMAIN="$1"
 
   tar -cvf config.tar /acme.sh/${DOMAIN}
@@ -322,10 +343,10 @@ add_conf_to_secret() {
   local STATUS_CODE=""
   if [ "${IS_SECRET_CONF_ALREADY_EXISTS}" = "false" ]; then
     info "Adding conf"
-    STATUS_CODE=$(k8s_api_call "POST" /api/v1/namespaces/${NAMESPACE}/secrets --data "@${SECRET_FILE}" 2>/dev/null)
+    STATUS_CODE=$(k8s_api_call "POST" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets" --data "@${SECRET_FILE}" 2>/dev/null)
   else
     info "Updating conf"
-    STATUS_CODE=$(k8s_api_call "PUT" /api/v1/namespaces/${NAMESPACE}/secrets/${CONF_SECRET_NAME} --data "@${SECRET_FILE}" 2>/dev/null)
+    STATUS_CODE=$(k8s_api_call "PUT" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets/${CONF_SECRET_NAME}" --data "@${SECRET_FILE}" 2>/dev/null)
   fi
 
   debug "Status code: ${STATUS_CODE}"
