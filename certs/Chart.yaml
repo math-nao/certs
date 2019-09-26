@@ -1,4 +1,4 @@
 apiVersion: v1
 description: A Helm chart for managing Let's encrypt certificates
 name: certs
-version: 1.0.3
+version: 1.1.0
