@@ -191,6 +191,7 @@ generate_cert() {
   # update global variables
   CERTS_SECRET_NAME="${NAME}"
   CONF_SECRET_NAME="${NAME}-conf"
+  IS_SECRET_CONF_ALREADY_EXISTS="false"
 
   # get previous conf if it exists
   load_conf_from_secret "${CERT_NAMESPACE}"
