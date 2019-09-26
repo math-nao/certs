@@ -1,6 +1,6 @@
-{{- if not .Values.manageAllNamespaces -}}
+{{- if .Values.manageAllNamespaces -}}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: {{ template "helper.fullname" . }}
 rules:

@@ -24,11 +24,15 @@ spec:
           - name: {{ template "helper.fullname" . }}
             image: {{ template "helper.image" . }}
             imagePullPolicy: Always
-            {{- if .Values.env }}
             env:
+            - name: ACME_MANAGE_ALL_NAMESPACES
+              value: {{ .Values.manageAllNamespaces | quote }}
+            - name: ACME_DEMO_ENABLED
+              value: {{ .Values.demo.enabled | quote }}
+            - name: ACME_DEBUG
+              value: {{ .Values.debug | quote }}
             {{- with .Values.env }}
 {{ toYaml . | indent 12 }}
-            {{- end }}
             {{- end }}
           restartPolicy: Never
           backoffLimit: {{ .Values.backoffLimit }}

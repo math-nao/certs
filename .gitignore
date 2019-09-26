@@ -1,5 +1,5 @@
 *.DS_Store
 *~
 tmp
-output.yaml
-values.test.yaml
+**/output.yaml
+**/values.test.yaml
