@@ -9,7 +9,6 @@ Name  | Example | Description
 acme.kubernetes.io/enable | `"true"` | Enable `Certs` on this ingress when value is set to `"true"`.<br />Default value is empty.
 acme.kubernetes.io/dns | `"dns_gd"` | Set the `acme.sh` `--dns` parameter: (see [https://github.com/Neilpang/acme.sh/wiki/dnsapi] for all `--dns` supported values).<br />Default value is empty.
 acme.kubernetes.io/staging | `"true"` | Enable acme staging certificate validation when value is set to `"true"`.<br />Default value is empty.
-acme.kubernetes.io/debug | `"true"` | Display more logs when value is set to `"true"`.<br />Default value is empty.
 acme.kubernetes.io/add-args | `"--keylength ec-256"` | Add more arguments to `acme.sh` command used to generate certificates.<br />Default value is empty.
 acme.kubernetes.io/cmd-to-use | `"acme.sh -h"` | Replace the `acme.sh` command to use for generating certificates.<br />Default value is empty.
 
@@ -26,6 +25,7 @@ activeDeadlineSeconds | `600` | Set an active deadline for terminatting a job.
 ttlSecondsAfterFinished | `120` | Set a TTL for cleaning a job.
 successfulJobsHistoryLimit | `3` | Specify how many completed jobs should be kept.
 manageAllNamespaces | `false` | Whether or not `certs` should manage all namespaces for generating certificates.
+debug | `false` | Display more logs when value is set to `"true"`.
 failedJobsHistoryLimit | `1` | Specify how many failed jobs should be kept.
 env | `[]` | List all environment variables needed to run a `acme.sh` dns validation for certificate renew.
 demo.enabled | `false` | Enable a demo backend for test purpose.

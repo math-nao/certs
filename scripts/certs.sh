@@ -22,9 +22,9 @@ IS_SECRET_CONF_ALREADY_EXISTS="false"
 ACME_CA_FILE="/root/certs/ca.crt"
 ACME_CERT_FILE="/root/certs/tls.crt"
 ACME_KEY_FILE="/root/certs/tls.key"
+ACME_DEBUG="${ACME_DEBUG-false}"
 CERTS_DNS=""
 CERTS_IS_STAGING="false"
-CERTS_IS_DEBUG="false"
 CERTS_ARGS=""
 CERTS_CMD_TO_USE=""
 K8S_API_URI_NAMESPACE="namespaces/${NAMESPACE}"
@@ -41,7 +41,7 @@ info() {
 }
 
 debug() {
-  if [ "${CERTS_IS_DEBUG}" = "true" ]; then
+  if [ "${ACME_DEBUG}" = "true" ]; then
     verbose "Debug: $@"
   fi
 }
@@ -154,10 +154,6 @@ starter() {
         CERTS_IS_STAGING="true"
       fi
 
-      if [ "$(echo "${ingress}" | jq -c '. | select(.metadata.annotations."acme.kubernetes.io/debug"=="true")' | wc -l)" = "1"  ]; then
-        CERTS_IS_DEBUG="true"
-      fi
-
       TLS_INPUTS=$(echo "${ingress}" | jq -c '.spec.tls | .[]')
       for input in ${TLS_INPUTS}; do
         local SECRETNAME=$(echo ${input} | jq -rc '.secretName')
@@ -178,10 +174,10 @@ generate_cert() {
   shift
   local DOMAINS="$@"
 
-  debug "Generate certs for" \
+  info "Generate certs for" \
    " dns: ${CERTS_DNS}," \
    " is_staging: ${CERTS_IS_STAGING}," \
-   " is_debug: ${CERTS_IS_DEBUG}," \
+   " is_debug: ${ACME_DEBUG}," \
    " args: ${CERTS_ARGS}," \
    " cmd to use: ${CERTS_CMD_TO_USE}," \
    " name: ${NAME}," \
@@ -199,7 +195,7 @@ generate_cert() {
   # prepare acme cmd args
   ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --key-file '${ACME_KEY_FILE}'"
 
-  if [ "${CERTS_IS_DEBUG}" = "true" ]; then
+  if [ "${ACME_DEBUG}" = "true" ]; then
     ACME_ARGS="${ACME_ARGS} --debug"
   fi
   
