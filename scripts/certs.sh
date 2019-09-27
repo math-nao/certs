@@ -21,6 +21,7 @@ IS_SECRET_CERTS_ALREADY_EXISTS="false"
 IS_SECRET_CONF_ALREADY_EXISTS="false"
 ACME_CA_FILE="/root/certs/ca.crt"
 ACME_CERT_FILE="/root/certs/tls.crt"
+ACME_FULLCHAIN_FILE="/root/certs/fullchain.crt"
 ACME_KEY_FILE="/root/certs/tls.key"
 ACME_DEBUG="${ACME_DEBUG-false}"
 CERTS_DNS=""
@@ -209,7 +210,7 @@ generate_cert() {
   load_conf_from_secret "${CERT_NAMESPACE}"
 
   # prepare acme cmd args
-  ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --key-file '${ACME_KEY_FILE}'"
+  ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --fullchain-file '${ACME_FULLCHAIN_FILE}' --key-file '${ACME_KEY_FILE}'"
 
   if [ "${ACME_DEBUG}" = "true" ]; then
     ACME_ARGS="${ACME_ARGS} --debug"
@@ -301,7 +302,7 @@ add_certs_to_secret() {
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg name "${CERTS_SECRET_NAME}" '. + {metadata: { name: $name }}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq '. + {data: {}}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg cacert "$(get_file_data_for_secret_json "${ACME_CA_FILE}")" '. * {data: {"ca.crt": $cacert}}')
-  SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlscert "$(get_file_data_for_secret_json "${ACME_CERT_FILE}")" '. * {data: {"tls.crt": $tlscert}}')
+  SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlscert "$(get_file_data_for_secret_json "${ACME_FULLCHAIN_FILE}")" '. * {data: {"tls.crt": $tlscert}}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlskey "$(get_file_data_for_secret_json "${ACME_KEY_FILE}")" '. * {data: {"tls.key": $tlskey}}')
 
   echo -e "${SECRET_JSON}" > "${SECRET_FILE}"
