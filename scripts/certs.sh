@@ -80,10 +80,10 @@ format_res_file() {
   echo "${FORMATTED_RES}" > "${FILE}"
 }
 
-get_cert_hash() {
+get_domain_folder() {
   local DOMAIN_NAME="$1"
   local IS_ECC_CERTIFICATE="$2"
-  
+
   if [ -z "${DOMAIN_NAME}" ]; then
     return
   fi
@@ -94,7 +94,15 @@ get_cert_hash() {
   fi
 
   if [ -d "${DOMAIN_FOLDER}" ]; then
-    echo $(md5sum "${DOMAIN_FOLDER}/fullchain.cer")
+    echo "${DOMAIN_FOLDER}"
+  fi
+}
+
+get_cert_hash() {
+  local DOMAIN_FOLDER="$1"
+
+  if [ -d "${DOMAIN_FOLDER}" ]; then
+    echo $(md5sum "${DOMAIN_FOLDER}/fullchain.cer" | awk '{ print $1 }')
   fi
 }
 
@@ -121,7 +129,10 @@ starter() {
       return
     fi
 
+    IFS=$'\n'
     for ingress in ${INGRESSES_FILTERED}; do
+      unset IFS
+
       CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
       CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
 
@@ -191,6 +202,7 @@ generate_cert() {
   # update global variables
   CERTS_SECRET_NAME="${NAME}"
   CONF_SECRET_NAME="${NAME}-conf"
+  IS_SECRET_CERTS_ALREADY_EXISTS="false"
   IS_SECRET_CONF_ALREADY_EXISTS="false"
 
   # get previous conf if it exists
@@ -239,8 +251,13 @@ generate_cert() {
     IS_ECC_CERTIFICATE="true"
   fi
 
+  local DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  debug "domain folder: ${DOMAIN_FOLDER}"
+
+
   # get current cert hash
-  CURRENT_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  CURRENT_CERT_HASH=$(get_cert_hash "${DOMAIN_FOLDER}")
+  debug "current cert hash: ${CURRENT_CERT_HASH}"
 
   # generate certs
   debug "Running cmd: ${ACME_CMD}"
@@ -254,14 +271,19 @@ generate_cert() {
     exit 1
   fi
 
+  # update domain folder with new folder created
+  DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  debug "domain folder: ${DOMAIN_FOLDER}"
+
   # get new cert hash
-  NEW_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  NEW_CERT_HASH=$(get_cert_hash "${DOMAIN_FOLDER}")
+  debug "new cert hash: ${NEW_CERT_HASH}"
 
   # update secrets only if certs has been updated
   if [ "${CURRENT_CERT_HASH}" != "${NEW_CERT_HASH}" ]; then
     info "Certificate change, updating..."
     add_certs_to_secret "${CERT_NAMESPACE}"
-    add_conf_to_secret "${CERT_NAMESPACE}" "${MAIN_DOMAIN}"
+    add_conf_to_secret "${CERT_NAMESPACE}" "${DOMAIN_FOLDER}"
   else
     info "No certificate change, nothing to do"
   fi
@@ -332,9 +354,19 @@ add_conf_to_secret() {
 
   local CERT_NAMESPACE="$1"
   shift
-  local DOMAIN="$1"
+  local DOMAIN_FOLDER="$1"
 
-  tar -cvf config.tar /acme.sh/${DOMAIN}
+  if [ -z "${DOMAIN_FOLDER}" ]; then
+    info "no folder found for domain"
+    return
+  fi
+
+  if [ ! -d "${DOMAIN_FOLDER}" ]; then
+    info "domain folder is not a directory"
+    return
+  fi
+
+  tar -cvf config.tar ${DOMAIN_FOLDER}
 
   SECRET_FILE="/root/secret.conf.json"
 
