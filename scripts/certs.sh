@@ -80,17 +80,21 @@ format_res_file() {
   echo "${FORMATTED_RES}" > "${FILE}"
 }
 
-get_domain_root() {
-  local DOMAIN_FOUND=$(find /acme.sh/*.* -type d | head -1)
-  if [ "${DOMAIN_FOUND}" != "" ]; then
-    echo $(basename "${DOMAIN_FOUND}" 2>/dev/null)
-  fi
-}
-
 get_cert_hash() {
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
-  if [ "${DOMAIN_NAME_ROOT}" != "" ]; then
-    echo $(md5sum "/acme.sh/${DOMAIN_NAME_ROOT}/fullchain.cer")
+  local DOMAIN_NAME="$1"
+  local IS_ECC_CERTIFICATE="$2"
+  
+  if [ -z "${DOMAIN_NAME}" ]; then
+    return
+  fi
+
+  local DOMAIN_FOLDER="/acme.sh/${DOMAIN_NAME}"
+  if [ "${IS_ECC_CERTIFICATE}" = "true" ]; then
+    DOMAIN_FOLDER="${DOMAIN_FOLDER}_ecc"
+  fi
+
+  if [ -d "${DOMAIN_FOLDER}" ]; then
+    echo $(md5sum "${DOMAIN_FOLDER}/fullchain.cer")
   fi
 }
 
@@ -211,24 +215,32 @@ generate_cert() {
     ACME_ARGS="${ACME_ARGS} --dns '${CERTS_DNS}'"
   fi
 
+  local MAIN_DOMAIN=""
   for domain in ${DOMAINS}; do
     if [ "${domain}" != "" ]; then
+      # set the first domain as the main domain
+      if [ -z "${MAIN_DOMAIN}" ]; then
+        MAIN_DOMAIN="${domain}"
+      fi
       ACME_ARGS="${ACME_ARGS} -d ${domain}"
     fi
   done
+
+  debug "main domain: ${MAIN_DOMAIN}"
 
   # use the custom acme arg set by user if it exists
   local ACME_CMD="acme.sh ${ACME_ARGS}"
   if [ "${CERTS_CMD_TO_USE}" != "" ]; then
     ACME_CMD="${CERTS_CMD_TO_USE}"
   fi
-  
-  # get the domain root used by acme
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
-  debug "domain name root: ${DOMAIN_NAME_ROOT}"
+
+  local IS_ECC_CERTIFICATE="false"
+  if [ -n "$(echo ${ACME_CMD} | grep ' --keylength ec-')" ]; then
+    IS_ECC_CERTIFICATE="true"
+  fi
 
   # get current cert hash
-  CURRENT_CERT_HASH=$(get_cert_hash)
+  CURRENT_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
 
   # generate certs
   debug "Running cmd: ${ACME_CMD}"
@@ -241,18 +253,15 @@ generate_cert() {
     info "An acme.sh error occurred"
     exit 1
   fi
-  
-  # update domain name root after certs creation
-  DOMAIN_NAME_ROOT=$(get_domain_root)
 
   # get new cert hash
-  NEW_CERT_HASH=$(get_cert_hash)
+  NEW_CERT_HASH=$(get_cert_hash "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
 
   # update secrets only if certs has been updated
   if [ "${CURRENT_CERT_HASH}" != "${NEW_CERT_HASH}" ]; then
     info "Certificate change, updating..."
     add_certs_to_secret "${CERT_NAMESPACE}"
-    add_conf_to_secret "${CERT_NAMESPACE}" "${DOMAIN_NAME_ROOT}"
+    add_conf_to_secret "${CERT_NAMESPACE}" "${MAIN_DOMAIN}"
   else
     info "No certificate change, nothing to do"
   fi
