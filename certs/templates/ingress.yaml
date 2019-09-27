@@ -13,7 +13,7 @@ metadata:
     acme.kubernetes.io/dns: "dns_gd"
     acme.kubernetes.io/staging: "true"
     acme.kubernetes.io/debug: "true"
-    acme.kubernetes.io/add-args: ""
+    acme.kubernetes.io/add-args: "--keylength ec-256"
     acme.kubernetes.io/cmd-to-use: ""
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
