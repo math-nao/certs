@@ -12,7 +12,7 @@ entries:
   - apiVersion: v1
     created: 2019-09-28T08:50:19.944615+02:00
     description: A Helm chart for managing Let's encrypt certificates
-    digest: 726358ea416144464159020e1b43b4de3b203f1851e5ef4b789d9b8b119f963e
+    digest: f5cf55b0d3b4660e2a6389d901bb363ef95fc93cd078467b7d5d94dde3a9c954
     name: certs
     urls:
     - https://math-nao.github.io/certs/charts/certs-1.1.0.tgz
