@@ -21,6 +21,7 @@ IS_SECRET_CERTS_ALREADY_EXISTS="false"
 IS_SECRET_CONF_ALREADY_EXISTS="false"
 ACME_CA_FILE="/root/certs/ca.crt"
 ACME_CERT_FILE="/root/certs/tls.crt"
+ACME_FULLCHAIN_FILE="/root/certs/fullchain.crt"
 ACME_KEY_FILE="/root/certs/tls.key"
 ACME_DEBUG="${ACME_DEBUG-false}"
 CERTS_DNS=""
@@ -80,17 +81,29 @@ format_res_file() {
   echo "${FORMATTED_RES}" > "${FILE}"
 }
 
-get_domain_root() {
-  local DOMAIN_FOUND=$(find /acme.sh/*.* -type d | head -1)
-  if [ "${DOMAIN_FOUND}" != "" ]; then
-    echo $(basename "${DOMAIN_FOUND}" 2>/dev/null)
+get_domain_folder() {
+  local DOMAIN_NAME="$1"
+  local IS_ECC_CERTIFICATE="$2"
+
+  if [ -z "${DOMAIN_NAME}" ]; then
+    return
+  fi
+
+  local DOMAIN_FOLDER="/acme.sh/${DOMAIN_NAME}"
+  if [ "${IS_ECC_CERTIFICATE}" = "true" ]; then
+    DOMAIN_FOLDER="${DOMAIN_FOLDER}_ecc"
+  fi
+
+  if [ -d "${DOMAIN_FOLDER}" ]; then
+    echo "${DOMAIN_FOLDER}"
   fi
 }
 
 get_cert_hash() {
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
-  if [ "${DOMAIN_NAME_ROOT}" != "" ]; then
-    echo $(md5sum "/acme.sh/${DOMAIN_NAME_ROOT}/fullchain.cer")
+  local DOMAIN_FOLDER="$1"
+
+  if [ -d "${DOMAIN_FOLDER}" ]; then
+    echo $(md5sum "${DOMAIN_FOLDER}/fullchain.cer" | awk '{ print $1 }')
   fi
 }
 
@@ -117,7 +130,10 @@ starter() {
       return
     fi
 
+    IFS=$'\n'
     for ingress in ${INGRESSES_FILTERED}; do
+      unset IFS
+
       CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
       CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
 
@@ -187,13 +203,14 @@ generate_cert() {
   # update global variables
   CERTS_SECRET_NAME="${NAME}"
   CONF_SECRET_NAME="${NAME}-conf"
+  IS_SECRET_CERTS_ALREADY_EXISTS="false"
   IS_SECRET_CONF_ALREADY_EXISTS="false"
 
   # get previous conf if it exists
   load_conf_from_secret "${CERT_NAMESPACE}"
 
   # prepare acme cmd args
-  ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --key-file '${ACME_KEY_FILE}'"
+  ACME_ARGS="--issue --ca-file '${ACME_CA_FILE}' --cert-file '${ACME_CERT_FILE}' --fullchain-file '${ACME_FULLCHAIN_FILE}' --key-file '${ACME_KEY_FILE}'"
 
   if [ "${ACME_DEBUG}" = "true" ]; then
     ACME_ARGS="${ACME_ARGS} --debug"
@@ -211,24 +228,37 @@ generate_cert() {
     ACME_ARGS="${ACME_ARGS} --dns '${CERTS_DNS}'"
   fi
 
+  local MAIN_DOMAIN=""
   for domain in ${DOMAINS}; do
     if [ "${domain}" != "" ]; then
+      # set the first domain as the main domain
+      if [ -z "${MAIN_DOMAIN}" ]; then
+        MAIN_DOMAIN="${domain}"
+      fi
       ACME_ARGS="${ACME_ARGS} -d ${domain}"
     fi
   done
+
+  debug "main domain: ${MAIN_DOMAIN}"
 
   # use the custom acme arg set by user if it exists
   local ACME_CMD="acme.sh ${ACME_ARGS}"
   if [ "${CERTS_CMD_TO_USE}" != "" ]; then
     ACME_CMD="${CERTS_CMD_TO_USE}"
   fi
-  
-  # get the domain root used by acme
-  local DOMAIN_NAME_ROOT=$(get_domain_root)
-  debug "domain name root: ${DOMAIN_NAME_ROOT}"
+
+  local IS_ECC_CERTIFICATE="false"
+  if [ -n "$(echo ${ACME_CMD} | grep ' --keylength ec-')" ]; then
+    IS_ECC_CERTIFICATE="true"
+  fi
+
+  local DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  debug "domain folder: ${DOMAIN_FOLDER}"
+
 
   # get current cert hash
-  CURRENT_CERT_HASH=$(get_cert_hash)
+  CURRENT_CERT_HASH=$(get_cert_hash "${DOMAIN_FOLDER}")
+  debug "current cert hash: ${CURRENT_CERT_HASH}"
 
   # generate certs
   debug "Running cmd: ${ACME_CMD}"
@@ -241,18 +271,20 @@ generate_cert() {
     info "An acme.sh error occurred"
     exit 1
   fi
-  
-  # update domain name root after certs creation
-  DOMAIN_NAME_ROOT=$(get_domain_root)
+
+  # update domain folder with new folder created
+  DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  debug "domain folder: ${DOMAIN_FOLDER}"
 
   # get new cert hash
-  NEW_CERT_HASH=$(get_cert_hash)
+  NEW_CERT_HASH=$(get_cert_hash "${DOMAIN_FOLDER}")
+  debug "new cert hash: ${NEW_CERT_HASH}"
 
   # update secrets only if certs has been updated
   if [ "${CURRENT_CERT_HASH}" != "${NEW_CERT_HASH}" ]; then
     info "Certificate change, updating..."
     add_certs_to_secret "${CERT_NAMESPACE}"
-    add_conf_to_secret "${CERT_NAMESPACE}" "${DOMAIN_NAME_ROOT}"
+    add_conf_to_secret "${CERT_NAMESPACE}" "${DOMAIN_FOLDER}"
   else
     info "No certificate change, nothing to do"
   fi
@@ -270,7 +302,7 @@ add_certs_to_secret() {
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg name "${CERTS_SECRET_NAME}" '. + {metadata: { name: $name }}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq '. + {data: {}}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg cacert "$(get_file_data_for_secret_json "${ACME_CA_FILE}")" '. * {data: {"ca.crt": $cacert}}')
-  SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlscert "$(get_file_data_for_secret_json "${ACME_CERT_FILE}")" '. * {data: {"tls.crt": $tlscert}}')
+  SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlscert "$(get_file_data_for_secret_json "${ACME_FULLCHAIN_FILE}")" '. * {data: {"tls.crt": $tlscert}}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlskey "$(get_file_data_for_secret_json "${ACME_KEY_FILE}")" '. * {data: {"tls.key": $tlskey}}')
 
   echo -e "${SECRET_JSON}" > "${SECRET_FILE}"
@@ -323,9 +355,19 @@ add_conf_to_secret() {
 
   local CERT_NAMESPACE="$1"
   shift
-  local DOMAIN="$1"
+  local DOMAIN_FOLDER="$1"
 
-  tar -cvf config.tar /acme.sh/${DOMAIN}
+  if [ -z "${DOMAIN_FOLDER}" ]; then
+    info "no folder found for domain"
+    return
+  fi
+
+  if [ ! -d "${DOMAIN_FOLDER}" ]; then
+    info "domain folder is not a directory"
+    return
+  fi
+
+  tar -cvf config.tar ${DOMAIN_FOLDER}
 
   SECRET_FILE="/root/secret.conf.json"
 

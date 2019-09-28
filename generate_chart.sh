@@ -5,14 +5,25 @@ set -x
 
 echo "Starting..."
 
-CHARTS_PATH="charts"
+version="$1"
 
-mkdir -p "${CHARTS_PATH}"
+if [ -z "${version}" ]; then
+  echo "Version is missing"
+  exit 1
+fi
 
-helm package certs
+charts_path="charts"
 
-mv -f certs-*.tgz "${CHARTS_PATH}"/
+mkdir -p "${charts_path}"
 
-helm repo index "${CHARTS_PATH}" --url "https://math-nao.github.io/certs/${CHARTS_PATH}"
+# macos
+sed -E -i '' "s/^(version:) .*$/\1 ${version}/g" certs/Chart.yaml
+sed -E -i '' "s/^(  tag:) .*$/\1 ${version}/g" certs/values.yaml
+
+helm package --debug certs
+
+mv -f certs-*.tgz "${charts_path}"/
+
+helm repo index "${charts_path}" --url "https://math-nao.github.io/certs/${charts_path}"
 
 echo "Done."
