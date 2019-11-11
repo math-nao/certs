@@ -17,7 +17,6 @@ NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
 TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 CERTS_SECRET_NAME=""
 CONF_SECRET_NAME=""
-IS_SECRET_CERTS_ALREADY_EXISTS="false"
 IS_SECRET_CONF_ALREADY_EXISTS="false"
 ACME_CA_FILE="/root/certs/ca.crt"
 ACME_CERT_FILE="/root/certs/tls.crt"
@@ -203,7 +202,6 @@ generate_cert() {
   # update global variables
   CERTS_SECRET_NAME="${NAME}"
   CONF_SECRET_NAME="${NAME}-conf"
-  IS_SECRET_CERTS_ALREADY_EXISTS="false"
   IS_SECRET_CONF_ALREADY_EXISTS="false"
 
   # get previous conf if it exists
@@ -307,8 +305,12 @@ add_certs_to_secret() {
 
   echo -e "${SECRET_JSON}" > "${SECRET_FILE}"
 
+  local STATUS_CODE_CHECKER=$(k8s_api_call "GET" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets/${CERTS_SECRET_NAME}" 2>${RES_FILE})
+
+  debug "Status code checker: ${STATUS_CODE_CHECKER}"
+
   local STATUS_CODE=""
-  if [ "${IS_SECRET_CERTS_ALREADY_EXISTS}" = "false" ]; then
+  if [ "${STATUS_CODE_CHECKER}" != "200" ]; then
     info "Adding certs"
     STATUS_CODE=$(k8s_api_call "POST" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets" --data "@${SECRET_FILE}" 2>/dev/null)
   else
@@ -334,6 +336,8 @@ load_conf_from_secret() {
 
   local RES_FILE=$(mktemp /tmp/load_conf.XXXX)
   local STATUS_CODE=$(k8s_api_call "GET" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets/${CONF_SECRET_NAME}" 2>${RES_FILE})
+
+  debug "Status code: ${STATUS_CODE}"
 
   if [ "${STATUS_CODE}" = "200" ]; then
     info "Adding conf"
