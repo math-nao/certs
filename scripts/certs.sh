@@ -56,7 +56,7 @@ k8s_api_call() {
   local RES_FILE=$(mktemp /tmp/res.XXXX)
   curl -i -X "${METHOD}" --cacert "${CA_FILE}" -H "Authorization: Bearer $TOKEN" -H 'Accept: application/json' -H "Content-Type: application/json" https://${APISERVER}${URI} ${ARGS} -o ${RES_FILE}
   cat ${RES_FILE} > /dev/stderr
-  local STATUS_CODE=$(cat ${RES_FILE} | grep 'HTTP/2' | awk '{printf $2}')
+  local STATUS_CODE=$(cat ${RES_FILE} | grep 'HTTP/' | awk '{printf $2}')
   rm -f "${RES_FILE}"
   echo ${STATUS_CODE}
 }
