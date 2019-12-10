@@ -6,6 +6,20 @@ set -e
 echo "wait few seconds in case ingress rule is deployed at the same as it is in demo"
 sleep 30
 
+report_file="./report.log"
+#initialize file content
+echo "" > "${report_file}"
+
+on_exit() {
+  echo "Exiting..."
+  if [ "${ACME_DEBUG}" = "true" ]; then
+    echo "Report file content:"
+    cat "${report_file}"
+  fi
+}
+
+trap on_exit EXIT
+
 if [ "${KUBERNETES_SERVICE_HOST}" = "" ]; then
   echo "No k8s api server found"
   exit 1
@@ -46,6 +60,12 @@ debug() {
   fi
 }
 
+add_to_report() {
+  if [ "${ACME_DEBUG}" = "true" ]; then
+    echo "$@" >> "${report_file}"
+  fi
+}
+
 k8s_api_call() {
   local METHOD="$1"
   shift
@@ -57,6 +77,7 @@ k8s_api_call() {
   curl -i -X "${METHOD}" --cacert "${CA_FILE}" -H "Authorization: Bearer $TOKEN" -H 'Accept: application/json' -H "Content-Type: application/json" https://${APISERVER}${URI} ${ARGS} -o ${RES_FILE}
   cat ${RES_FILE} > /dev/stderr
   local STATUS_CODE=$(cat ${RES_FILE} | grep 'HTTP/' | awk '{printf $2}')
+  add_to_report "$(cat "${RES_FILE}")"
   rm -f "${RES_FILE}"
   echo ${STATUS_CODE}
 }
@@ -122,6 +143,7 @@ starter() {
     format_res_file "${RES_FILE}"
     
     local INGRESSES_FILTERED=$(cat "${RES_FILE}" | jq -c '.items | .[] | select(.metadata.annotations."acme.kubernetes.io/enable"=="true")')
+    add_to_report "$(cat "${RES_FILE}")"
     rm -f "${RES_FILE}"
 
     if [ "${INGRESSES_FILTERED}" = "" ]; then
