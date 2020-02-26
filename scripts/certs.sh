@@ -104,18 +104,32 @@ format_res_file() {
 get_domain_folder() {
   local DOMAIN_NAME="$1"
   local IS_ECC_CERTIFICATE="$2"
+  local IS_CUSTOM_DOMAIN="$3"
 
   if [ -z "${DOMAIN_NAME}" ]; then
     return
   fi
 
-  local DOMAIN_FOLDER="/acme.sh/${DOMAIN_NAME}"
+  local DOMAIN_FOLDER
+  DOMAIN_FOLDER="/acme.sh/$(echo "${DOMAIN_NAME}" | sed 's@\*@\\*@g')"
+  
   if [ "${IS_ECC_CERTIFICATE}" = "true" ]; then
     DOMAIN_FOLDER="${DOMAIN_FOLDER}_ecc"
   fi
 
   if [ -d "${DOMAIN_FOLDER}" ]; then
     echo "${DOMAIN_FOLDER}"
+    return
+  fi
+
+  # in case of custom domain, try to find the domain folder
+  if [ "${IS_CUSTOM_DOMAIN}" = "true" ]; then
+    local LATEST_MODIFIED_FOLDER
+    LATEST_MODIFIED_FOLDER=$(ls -td /acme.sh/* | head -1)
+    if [ -n "${LATEST_MODIFIED_FOLDER}" ]; then
+      basename "${LATEST_MODIFIED_FOLDER}"
+      return
+    fi
   fi
 }
 
@@ -272,7 +286,12 @@ generate_cert() {
     IS_ECC_CERTIFICATE="true"
   fi
 
-  local DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  local IS_CUSTOM_DOMAIN="false"
+  if [ -n "$(echo ${ACME_CMD} | grep ' -d ')" ]; then
+    IS_CUSTOM_DOMAIN="true"
+  fi
+
+  local DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}" "${IS_CUSTOM_DOMAIN}")
   debug "domain folder: ${DOMAIN_FOLDER}"
 
 
@@ -293,7 +312,7 @@ generate_cert() {
   fi
 
   # update domain folder with new folder created
-  DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}")
+  DOMAIN_FOLDER=$(get_domain_folder "${MAIN_DOMAIN}" "${IS_ECC_CERTIFICATE}" "${IS_CUSTOM_DOMAIN}")
   debug "domain folder: ${DOMAIN_FOLDER}"
 
   # get new cert hash
