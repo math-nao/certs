@@ -8,6 +8,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  backoffLimit: {{ .Values.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
   template:
     metadata:
       labels:
@@ -30,7 +33,3 @@ spec:
 {{ toYaml . | indent 8 }}
         {{- end }}
       restartPolicy: Never
-      backoffLimit: {{ .Values.backoffLimit }}
-      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
-      ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
-      concurrencyPolicy: Forbid

@@ -11,12 +11,16 @@ spec:
   schedule: {{ .Values.schedule | quote }}
   successfulJobsHistoryLimit: {{ .Values.successfulJobsHistoryLimit }}
   failedJobsHistoryLimit: {{ .Values.failedJobsHistoryLimit }}
+  concurrencyPolicy: Forbid
   jobTemplate:
     metadata:
       labels:
         app: {{ template "helper.name" . }}
         release: {{ .Release.Name }}
     spec:
+      backoffLimit: {{ .Values.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
       template:
         spec:
           serviceAccountName: {{ template "helper.fullname" . }}
@@ -35,7 +39,3 @@ spec:
 {{ toYaml . | indent 12 }}
             {{- end }}
           restartPolicy: Never
-          backoffLimit: {{ .Values.backoffLimit }}
-          activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
-          ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
-          concurrencyPolicy: Forbid
