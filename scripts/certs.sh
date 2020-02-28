@@ -127,7 +127,7 @@ get_domain_folder() {
     local LATEST_MODIFIED_FOLDER
     LATEST_MODIFIED_FOLDER=$(ls -td /acme.sh/* | head -1)
     if [ -n "${LATEST_MODIFIED_FOLDER}" ]; then
-      basename "${LATEST_MODIFIED_FOLDER}"
+      echo "${LATEST_MODIFIED_FOLDER}"
       return
     fi
   fi
