@@ -2,7 +2,15 @@ apiVersion: v1
 entries:
   certs:
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.814002+01:00
+    created: 2020-02-28T16:56:42.986978+01:00
+    description: A Helm chart for managing Let's encrypt certificates
+    digest: fffb6104bcc10fef42625e628d43a41eafdbc69c2fb8d25ecb2295c0c41582df
+    name: certs
+    urls:
+    - https://math-nao.github.io/certs/charts/certs-1.1.5.tgz
+    version: 1.1.5
+  - apiVersion: v1
+    created: 2020-02-28T16:56:42.986045+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: caf2004cf46b711b8b455a3e7e3783cb171d967c75f8b9697ac53126f9ff7797
     name: certs
@@ -10,7 +18,7 @@ entries:
     - https://math-nao.github.io/certs/charts/certs-1.1.4.tgz
     version: 1.1.4
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.81322+01:00
+    created: 2020-02-28T16:56:42.984949+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: 480296deb1fc93cbe2757c6b855ba06efc03076abfb1407ba9ab50103302e4b0
     name: certs
@@ -18,7 +26,7 @@ entries:
     - https://math-nao.github.io/certs/charts/certs-1.1.3.tgz
     version: 1.1.3
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.812678+01:00
+    created: 2020-02-28T16:56:42.983804+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: 3da84ee0e0784e36c73fd263156c1f56b446c3ed6ad59ede55192de7f8d21a1e
     name: certs
@@ -26,7 +34,7 @@ entries:
     - https://math-nao.github.io/certs/charts/certs-1.1.2.tgz
     version: 1.1.2
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.811918+01:00
+    created: 2020-02-28T16:56:42.982779+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: 135c957157f4ac2e63ec080281d6ba62a0b55cb23b6d36970faa67ccf1d1cb92
     name: certs
@@ -34,7 +42,7 @@ entries:
     - https://math-nao.github.io/certs/charts/certs-1.1.1.tgz
     version: 1.1.1
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.810969+01:00
+    created: 2020-02-28T16:56:42.978986+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: f5cf55b0d3b4660e2a6389d901bb363ef95fc93cd078467b7d5d94dde3a9c954
     name: certs
@@ -42,7 +50,7 @@ entries:
     - https://math-nao.github.io/certs/charts/certs-1.1.0.tgz
     version: 1.1.0
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.81042+01:00
+    created: 2020-02-28T16:56:42.977611+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: 6820dce64a8580480994c48db545810a3db2f4ee63d750a346dc2db1dab5492d
     name: certs
@@ -50,7 +58,7 @@ entries:
     - https://math-nao.github.io/certs/charts/certs-1.0.3.tgz
     version: 1.0.3
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.809535+01:00
+    created: 2020-02-28T16:56:42.976734+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: df1b855bbb58fb796087e4e032a0ba1b347320630e7c8e52c26a11c4be02e1ba
     name: certs
@@ -58,7 +66,7 @@ entries:
     - https://math-nao.github.io/certs/charts/certs-1.0.2.tgz
     version: 1.0.2
   - apiVersion: v1
-    created: 2020-02-26T20:10:32.808323+01:00
+    created: 2020-02-28T16:56:42.975807+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: 3003a9dec1733d144168b2d6c0090ed6bd449f21cca31cd39997f20288d2ab1f
     name: certs
@@ -67,11 +75,11 @@ entries:
     version: 1.0.1
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2020-02-26T20:10:32.807366+01:00
+    created: 2020-02-28T16:56:42.974858+01:00
     description: A Helm chart for managing Let's encrypt certificates
     digest: 790b6902ad4b95bcfd6f6906d2f028d7fd723e8fecb4c5774b9b6c565b104aae
     name: certs
     urls:
     - https://math-nao.github.io/certs/charts/certs-1.0.0.tgz
     version: 1.0.0
-generated: 2020-02-26T20:10:32.803919+01:00
+generated: 2020-02-28T16:56:42.973196+01:00
