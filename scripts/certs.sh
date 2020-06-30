@@ -306,7 +306,12 @@ generate_cert() {
 
   info "acme.sh return code: ${RC}"
 
-  if [ "${RC}" != "0" -a "${RC}" != "2" ]; then
+  if [ "${RC}" = "2" ]; then
+    info "Certificate current. No renewal needed"
+    return
+  fi
+
+  if [ "${RC}" != "0" ]; then
     info "An acme.sh error occurred"
     exit 1
   fi
