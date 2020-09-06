@@ -111,7 +111,7 @@ get_domain_folder() {
   fi
 
   local DOMAIN_FOLDER
-  DOMAIN_FOLDER="/acme.sh/$(echo "${DOMAIN_NAME}" | sed 's@\*@\\*@g')"
+  DOMAIN_FOLDER="/acme.sh/$(echo "${DOMAIN_NAME}")"
   
   if [ "${IS_ECC_CERTIFICATE}" = "true" ]; then
     DOMAIN_FOLDER="${DOMAIN_FOLDER}_ecc"
