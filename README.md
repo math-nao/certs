@@ -1,3 +1,5 @@
+[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/certs)](https://artifacthub.io/packages/search?repo=certs)
+
 # A Let's Encrypt certificates manager for Kubernetes
 
 This chart use the [acme.sh][acme-sh] script to generate Let's Encrypt certifcates with DNS validation only; it uses Kubernetes `Job` to get and renew certificates.
