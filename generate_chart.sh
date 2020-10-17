@@ -12,18 +12,23 @@ if [ -z "${version}" ]; then
   exit 1
 fi
 
-charts_path="charts"
+charts_dir="charts"
+build_dir="build"
 
-mkdir -p "${charts_path}"
+mkdir -p "${charts_dir}" "${build_dir}"
+
+# clean build dir
+rm -rf "${build_dir:?}"/*
 
 # macos
 sed -E -i '' "s/^(version:) .*$/\1 ${version}/g" certs/Chart.yaml
 sed -E -i '' "s/^(  tag:) .*$/\1 ${version}/g" certs/values.yaml
 
-helm package --debug certs
+helm package --debug --destination "${build_dir}" certs
 
-mv -f certs-*.tgz "${charts_path}"/
+helm repo index "${build_dir}" --url "https://math-nao.github.io/certs/${charts_dir}" --merge "${charts_dir}/index.yaml"
 
-helm repo index "${charts_path}" --url "https://math-nao.github.io/certs/${charts_path}"
+mv -f "${build_dir}/index.yaml" "${charts_dir}"
+mv -f "${build_dir}/"certs-*.tgz "${charts_dir}"
 
 echo "Done."
