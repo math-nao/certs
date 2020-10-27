@@ -6,7 +6,7 @@ home: https://github.com/math-nao/certs
 icon: https://math-nao.github.io/certs/icon.svg
 keywords:
 - letsencrypt
-- certificats
+- certificat
 - ssl
 - tls
 - acme
