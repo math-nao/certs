@@ -348,6 +348,7 @@ add_certs_to_secret() {
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg cacert "$(get_file_data_for_secret_json "${ACME_CA_FILE}")" '. * {data: {"ca.crt": $cacert}}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlscert "$(get_file_data_for_secret_json "${ACME_FULLCHAIN_FILE}")" '. * {data: {"tls.crt": $tlscert}}')
   SECRET_JSON=$(echo ${SECRET_JSON} | jq --arg tlskey "$(get_file_data_for_secret_json "${ACME_KEY_FILE}")" '. * {data: {"tls.key": $tlskey}}')
+  SECRET_JSON=$(echo ${SECRET_JSON} | jq '. + {type: "kubernetes.io/tls"}')
 
   echo -e "${SECRET_JSON}" > "${SECRET_FILE}"
 
