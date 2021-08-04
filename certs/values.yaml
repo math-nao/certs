@@ -28,6 +28,8 @@ manageAllNamespaces: false
 
 env: []
 
+secretResourceNames: []
+
 demo:
   enabled: false
   image: mathnao/light-test-server
