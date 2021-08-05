@@ -7,6 +7,13 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["get", "list", "update", "create"]
+  {{- if gt (len .Values.secretResourceNames) 0 }}
+  resourceNames:
+  {{- range .Values.secretResourceNames }}
+    - {{ . | quote }}
+    - {{ printf "%s-conf" . | quote }}
+  {{- end }}  
+  {{- end }}
 - apiGroups: ["extensions"]
   resources: ["ingresses"]
   verbs: ["list"]
