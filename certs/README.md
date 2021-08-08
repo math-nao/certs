@@ -32,6 +32,7 @@ manageAllNamespaces | `false` | Whether or not `certs` should manage all namespa
 debug | `false` | Display more logs when value is set to `"true"`.
 failedJobsHistoryLimit | `1` | Specify how many failed jobs should be kept.
 env | `[]` | List all environment variables needed to run a `acme.sh` dns validation for certificate renew.
+secretResourceNames | `[]` | Limit Role/ClusterRole access to a list of secrets. This should be a list of tls secrets used by ingress resources.
 demo.enabled | `false` | Enable a demo backend for test purpose.
 demo.image | `mathnao/light-test-server` | Set the docker image to use for the demo backend
 demo.service.type | `ClusterIP` | Set the service type for the demo backend
