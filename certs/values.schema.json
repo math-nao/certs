@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "type": "object",
+  "properties": {
+    "schedule": {
+      "type": "string",
+      "title": "Set a schedule",
+      "description": "Set the job schedule to run dns validation for certificate renew.",
+      "form": true
+    },
+    "backoffLimit": {
+      "type": "string",
+      "title": "Set a backoff limit",
+      "description": "Specify the number of retries before considering a job as failed.",
+      "form": true
+    },
+    "debug": {
+      "type": "boolean",
+      "title": "Enable debug mode",
+      "description": "Display more logs when value is set to `true`",
+      "form": true
+    },
+    "activeDeadlineSeconds": {
+      "type": "string",
+      "title": "Set an active deadline seconds",
+      "description": "Set an active deadline for terminatting a job.",
+      "form": true
+    },
+    "ttlSecondsAfterFinished": {
+      "type": "string",
+      "title": "Set a TTL for cleaning a job",
+      "description": "Set a TTL for cleaning a job.",
+      "form": true
+    },
+    "successfulJobsHistoryLimit": {
+      "type": "string",
+      "title": "Set a limit for successful jobs history",
+      "description": "Specify how many completed jobs should be kept.",
+      "form": true
+    },
+    "failedJobsHistoryLimit": {
+      "type": "string",
+      "title": "Set a limit for failed jobs history",
+      "description": "Specify how many failed jobs should be kept.",
+      "form": true
+    },
+    "manageAllNamespaces": {
+      "type": "boolean",
+      "title": "Manage all namespaces",
+      "description": "Whether or not `certs` should manage all namespaces for generating certificates.",
+      "form": true
+    }
+  }
+}

@@ -27,7 +27,7 @@ spec:
           containers:
           - name: {{ template "helper.fullname" . }}
             image: {{ template "helper.image" . }}
-            imagePullPolicy: Always
+            imagePullPolicy: IfNotPresent
             env:
             - name: ACME_MANAGE_ALL_NAMESPACES
               value: {{ .Values.manageAllNamespaces | quote }}

@@ -6,12 +6,16 @@ set -e
 echo "wait few seconds in case ingress rule is deployed at the same as it is in demo"
 sleep 30
 
-report_file="./report.log"
+current_folder=$(dirname "$(readlink -f "$0")")
+report_file="${current_folder}/report.log"
 #initialize file content
 echo "" > "${report_file}"
 
 on_exit() {
   echo "Exiting..."
+  
+  source "${current_folder}/after.sh"
+
   if [ "${ACME_DEBUG}" = "true" ]; then
     echo "Report file content:"
     cat "${report_file}"
@@ -448,5 +452,7 @@ add_conf_to_secret() {
 
   rm -f "${SECRET_FILE}"
 }
+
+source "${current_folder}/before.sh"
 
 starter

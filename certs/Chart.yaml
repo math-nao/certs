@@ -1,5 +1,17 @@
 apiVersion: v1
-description: A Helm chart for managing Let's encrypt certificates
 name: certs
-version: 1.1.7
+description: A Helm chart for managing Let's encrypt certificates
+version: 1.1.9
+home: https://github.com/math-nao/certs
 icon: https://math-nao.github.io/certs/icon.svg
+keywords:
+- letsencrypt
+- certificat
+- ssl
+- tls
+- acme
+- security
+sources:
+- https://github.com/math-nao/certs
+annotations:
+  category: Security
