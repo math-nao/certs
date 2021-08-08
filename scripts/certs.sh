@@ -13,6 +13,9 @@ echo "" > "${report_file}"
 
 on_exit() {
   echo "Exiting..."
+  
+  source "${current_folder}/after.sh"
+
   if [ "${ACME_DEBUG}" = "true" ]; then
     echo "Report file content:"
     cat "${report_file}"
@@ -453,5 +456,3 @@ add_conf_to_secret() {
 source "${current_folder}/before.sh"
 
 starter
-
-source "${current_folder}/after.sh"
