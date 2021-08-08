@@ -1,4 +1,6 @@
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/certs)](https://artifacthub.io/packages/search?repo=certs)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mathnao)
 
 # A Let's Encrypt certificates manager for Kubernetes
 
@@ -110,4 +112,3 @@ Your donation helps to maintain `Certs`:
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mathnao)
 
 [acme-sh]: https://github.com/Neilpang/acme.sh
-
