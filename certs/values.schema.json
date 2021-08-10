@@ -9,7 +9,7 @@
       "form": true
     },
     "backoffLimit": {
-      "type": "string",
+      "type": "integer",
       "title": "Set a backoff limit",
       "description": "Specify the number of retries before considering a job as failed.",
       "form": true
@@ -21,25 +21,25 @@
       "form": true
     },
     "activeDeadlineSeconds": {
-      "type": "string",
+      "type": "integer",
       "title": "Set an active deadline seconds",
       "description": "Set an active deadline for terminatting a job.",
       "form": true
     },
     "ttlSecondsAfterFinished": {
-      "type": "string",
+      "type": "integer",
       "title": "Set a TTL for cleaning a job",
       "description": "Set a TTL for cleaning a job.",
       "form": true
     },
     "successfulJobsHistoryLimit": {
-      "type": "string",
+      "type": "integer",
       "title": "Set a limit for successful jobs history",
       "description": "Specify how many completed jobs should be kept.",
       "form": true
     },
     "failedJobsHistoryLimit": {
-      "type": "string",
+      "type": "integer",
       "title": "Set a limit for failed jobs history",
       "description": "Specify how many failed jobs should be kept.",
       "form": true
