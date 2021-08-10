@@ -4,6 +4,27 @@ entries:
   - annotations:
       category: Security
     apiVersion: v1
+    created: "2021-08-10T14:10:16.422159+02:00"
+    description: A Helm chart for managing Let's encrypt certificates
+    digest: bf47c693127c52897c19ae9a7538dd1b00f1bac5496c137765f317e03d47a1b2
+    home: https://github.com/math-nao/certs
+    icon: https://math-nao.github.io/certs/icon.svg
+    keywords:
+    - letsencrypt
+    - certificat
+    - ssl
+    - tls
+    - acme
+    - security
+    name: certs
+    sources:
+    - https://github.com/math-nao/certs
+    urls:
+    - https://math-nao.github.io/certs/charts/certs-1.1.10.tgz
+    version: 1.1.10
+  - annotations:
+      category: Security
+    apiVersion: v1
     created: "2021-08-08T12:00:40.515496+02:00"
     description: A Helm chart for managing Let's encrypt certificates
     digest: 00b804009c27bdd041856a5b4a6f15210cbd3c2d26d98cba99e861dedd925bc2
@@ -140,4 +161,4 @@ entries:
     urls:
     - https://math-nao.github.io/certs/charts/certs-1.0.0.tgz
     version: 1.0.0
-generated: "2021-08-08T12:00:40.514953+02:00"
+generated: "2021-08-10T14:10:16.42162+02:00"

@@ -3,6 +3,7 @@
 
 set -e
 
+echo "Version: ${CERTS_VERSION}"
 echo "wait few seconds in case ingress rule is deployed at the same as it is in demo"
 sleep 30
 
