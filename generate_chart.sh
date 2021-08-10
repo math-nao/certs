@@ -12,6 +12,8 @@ if [ -z "${version}" ]; then
   exit 1
 fi
 
+helm lint certs
+
 charts_dir="charts"
 build_dir="build"
 
@@ -23,6 +25,7 @@ rm -rf "${build_dir:?}"/*
 # macos
 sed -E -i '' "s/^(version:) .*$/\1 ${version}/g" certs/Chart.yaml
 sed -E -i '' "s/^(  tag:) .*$/\1 ${version}/g" certs/values.yaml
+sed -E -i '' "s/^(CERTS_VERSION)=.*$/\1=${version}/g" Dockerfile
 
 helm package --debug --destination "${build_dir}" certs
 
