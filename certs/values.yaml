@@ -26,6 +26,8 @@ failedJobsHistoryLimit: 1
 
 manageAllNamespaces: false
 
+namespacesWhitelist: ""
+
 env: []
 
 secretResourceNames: []

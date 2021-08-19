@@ -187,6 +187,21 @@ starter() {
 
       local CERT_NAMESPACE=$(echo "${ingress}" | jq -rc '.metadata.namespace')
 
+      if [ -n "${ACME_NAMESPACES_WHITELIST}" ]; then
+        local is_namespace_found="false"
+        for namespace in ${ACME_NAMESPACES_WHITELIST}; do
+          if [ "${CERT_NAMESPACE}" = "${namespace}" ]; then
+            is_namespace_found="true"
+            break
+          fi
+        done
+
+        if [ "${is_namespace_found}" != "true" ]; then
+          info "Namespace '${CERT_NAMESPACE}' not in whitelist"
+          continue
+        fi
+      fi
+
       local IS_DNS_VALID="true"
       if [ "${CERTS_DNS}" = "null" -o  "${CERTS_DNS}" = "" ]; then
         info "No dns configuration found"
