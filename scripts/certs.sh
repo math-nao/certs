@@ -46,6 +46,10 @@ CERTS_DNS=""
 CERTS_IS_STAGING="false"
 CERTS_ARGS=""
 CERTS_CMD_TO_USE=""
+CERTS_PRE_CMD=""
+CERTS_POST_CMD=""
+CERTS_ONSUCCESS_CMD=""
+CERTS_ONERROR_CMD=""
 K8S_API_URI_NAMESPACE="namespaces/${NAMESPACE}"
 if [ "${ACME_MANAGE_ALL_NAMESPACES}" = "true" ]; then
   K8S_API_URI_NAMESPACE=""
@@ -176,6 +180,10 @@ starter() {
 
       CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
       CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
+      CERTS_PRE_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/pre-cmd"')
+      CERTS_POST_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/post-cmd"')
+      CERTS_ONSUCCESS_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/on-success-cmd"')
+      CERTS_ONERROR_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/on-error-cmd"')
 
       local CERT_NAMESPACE=$(echo "${ingress}" | jq -rc '.metadata.namespace')
 
@@ -236,6 +244,8 @@ generate_cert() {
    " is_debug: ${ACME_DEBUG}," \
    " args: ${CERTS_ARGS}," \
    " cmd to use: ${CERTS_CMD_TO_USE}," \
+   " pre-cmd: ${CERTS_PRE_CMD}," \
+   " post-cmd: ${CERTS_POST_CMD}," \
    " name: ${NAME}," \
    " namespace: ${CERT_NAMESPACE}," \
    " domains: ${DOMAINS}"
@@ -304,12 +314,31 @@ generate_cert() {
   CURRENT_CERT_HASH=$(get_cert_hash "${DOMAIN_FOLDER}")
   debug "current cert hash: ${CURRENT_CERT_HASH}"
 
+  # pre-cmd
+  if [ -n "${CERTS_PRE_CMD}" ]; then
+    debug "Running pre-cmd: ${CERTS_PRE_CMD}"
+    PRE_CMD_RC=0
+    eval "${CERTS_PRE_CMD}" || PRE_CMD_RC=$? && true
+    info "pre-cmd return code: ${PRE_CMD_RC}"
+  else
+    debug "No pre-cmd"
+  fi
+
   # generate certs
   debug "Running cmd: ${ACME_CMD}"
   RC=0
   eval "${ACME_CMD}" || RC=$? && true
-
   info "acme.sh return code: ${RC}"
+
+  # post-cmd
+  if [ -n "${CERTS_POST_CMD}" ]; then
+    debug "Running post-cmd: ${CERTS_POST_CMD}"
+    POST_CMD_RC=0
+    eval "${CERTS_POST_CMD}" || POST_CMD_RC=$? && true
+    info "post-cmd return code: ${POST_CMD_RC}"
+  else
+    debug "No post-cmd"
+  fi
 
   if [ "${RC}" = "2" ]; then
     info "Certificate current. No renewal needed"
@@ -318,6 +347,9 @@ generate_cert() {
 
   if [ "${RC}" != "0" ]; then
     info "An acme.sh error occurred"
+    if [ -n "${CERTS_ONERROR_CMD}" ]; then
+      eval "$(format_cmd "${CERTS_ONERROR_CMD}")" || true
+    fi
     exit 1
   fi
 
@@ -336,6 +368,10 @@ generate_cert() {
     add_conf_to_secret "${CERT_NAMESPACE}" "${DOMAIN_FOLDER}"
   else
     info "No certificate change, nothing to do"
+  fi
+
+  if [ -n "${CERTS_ONSUCCESS_CMD}" ]; then
+    eval "$(format_cmd "${CERTS_ONSUCCESS_CMD}")" || true
   fi
 }
 
@@ -452,6 +488,10 @@ add_conf_to_secret() {
   fi
 
   rm -f "${SECRET_FILE}"
+}
+
+format_cmd() {
+  echo "$1" | sed -r "s@#domains#@${DOMAINS}@g"
 }
 
 source "${current_folder}/before.sh"

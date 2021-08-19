@@ -15,6 +15,10 @@ acme.kubernetes.io/dns | `"dns_gd"` | Set the `acme.sh` `--dns` parameter: (see 
 acme.kubernetes.io/staging | `"true"` | Enable acme staging certificate validation when value is set to `"true"`.<br />Default value is empty.
 acme.kubernetes.io/add-args | `"--keylength ec-256"` | Add more arguments to `acme.sh` command used to generate certificates.<br />Default value is empty.
 acme.kubernetes.io/cmd-to-use | `"acme.sh -h"` | Replace the `acme.sh` command to use for generating certificates.<br />Default value is empty.
+acme.kubernetes.io/pre-cmd | `"acme.sh  --register-account  -m myemail@example.com --server zerossl"` | Command to use before launching the `acme.sh` command.<br />Default value is empty.
+acme.kubernetes.io/post-cmd | `"acme.sh -h"` | Command to use after launching the `acme.sh` command.<br />Default value is empty.
+acme.kubernetes.io/on-success-cmd | `"curl -X POST -H 'Content-type: application/json' --data '{"text":"Certs successful for #domains#"}' YOUR_WEBHOOK_URL"` | Command to use when certificate renew has been succeed.<br />Default value is empty.
+acme.kubernetes.io/on-error-cmd | `"curl -X POST -H 'Content-type: application/json' --data '{"text":"Certs error for #domains#!"}' YOUR_WEBHOOK_URL"` | Command to use before launching the `acme.sh` command.<br />Default value is empty.
 
 ## Chart configuration
 
