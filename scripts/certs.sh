@@ -153,6 +153,18 @@ get_cert_hash() {
 starter() {
   info "Initialize environment..."
 
+  if [ -n "${EAB_KID}" ] && [ -n "${EAB_HMAC_KEY}" ]; then
+    # use zerossl as default CA
+    acme.sh --set-default-ca --server zerossl
+    # register zerossl account
+    acme.sh --register-account \
+        --eab-kid "${EAB_KID}" \
+        --eab-hmac-key "${EAB_HMAC_KEY}"
+  else
+    # use letsencrypt as default CA
+    acme.sh --set-default-ca --server letsencrypt
+  fi
+
   local URI="/apis/extensions/v1beta1"
   if [ -n "${K8S_API_URI_NAMESPACE}" ]; then
     URI="${URI}/${K8S_API_URI_NAMESPACE}"

@@ -104,6 +104,8 @@ env:
   value: XXXX
 ```
 
+Note: By setting `EAB_KID` and `EAB_HMAC_KEY` environment variables, `zerossl` CA will be used automatically and account will be registered with External Account Binding(EAB) credentials.
+
 4/ Visit `https://sslexample.foo.com` webpage, you should have a valid Let's Encrypt certificate
 
 ## Acknowledgments
