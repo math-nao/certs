@@ -15,6 +15,10 @@ acme.kubernetes.io/dns | `"dns_gd"` | Set the `acme.sh` `--dns` parameter: (see 
 acme.kubernetes.io/staging | `"true"` | Enable acme staging certificate validation when value is set to `"true"`.<br />Default value is empty.
 acme.kubernetes.io/add-args | `"--keylength ec-256"` | Add more arguments to `acme.sh` command used to generate certificates.<br />Default value is empty.
 acme.kubernetes.io/cmd-to-use | `"acme.sh -h"` | Replace the `acme.sh` command to use for generating certificates.<br />Default value is empty.
+acme.kubernetes.io/pre-cmd | `"acme.sh  --register-account  -m myemail@example.com --server zerossl"` | Command to use before launching the `acme.sh` command.<br />Default value is empty.
+acme.kubernetes.io/post-cmd | `"acme.sh -h"` | Command to use after launching the `acme.sh` command.<br />Default value is empty.
+acme.kubernetes.io/on-success-cmd | `"curl -X POST -H 'Content-type: application/json' --data '{"text":"Certs successful for #domains#"}' YOUR_WEBHOOK_URL"` | Command to use when certificate renew has been succeed.<br />Default value is empty.
+acme.kubernetes.io/on-error-cmd | `"curl -X POST -H 'Content-type: application/json' --data '{"text":"Certs error for #domains#!"}' YOUR_WEBHOOK_URL"` | Command to use before launching the `acme.sh` command.<br />Default value is empty.
 
 ## Chart configuration
 
@@ -29,6 +33,7 @@ activeDeadlineSeconds | `600` | Set an active deadline for terminatting a job.
 ttlSecondsAfterFinished | `120` | Set a TTL for cleaning a job.
 successfulJobsHistoryLimit | `3` | Specify how many completed jobs should be kept.
 manageAllNamespaces | `false` | Whether or not `certs` should manage all namespaces for generating certificates.
+namespacesWhitelist | `<empty>` | Run certs only for a namespace whitelist separated by a space. Useful when `manageAllNamespaces` is set to `true`.
 debug | `false` | Display more logs when value is set to `"true"`.
 failedJobsHistoryLimit | `1` | Specify how many failed jobs should be kept.
 env | `[]` | List all environment variables needed to run a `acme.sh` dns validation for certificate renew.
@@ -98,6 +103,8 @@ env:
 - name: GD_Secret
   value: XXXX
 ```
+
+Note: By setting `EAB_KID` and `EAB_HMAC_KEY` environment variables, `zerossl` CA will be used automatically and account will be registered with External Account Binding(EAB) credentials.
 
 4/ Visit `https://sslexample.foo.com` webpage, you should have a valid Let's Encrypt certificate
 

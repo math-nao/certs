@@ -8,7 +8,7 @@ service:
 image:
   registry: mathnao
   repository: certs
-  tag: 1.1.10
+  tag: 1.1.11
 
 schedule: "0 0,12 * * *"
 
@@ -25,6 +25,8 @@ successfulJobsHistoryLimit: 3
 failedJobsHistoryLimit: 1
 
 manageAllNamespaces: false
+
+namespacesWhitelist: ""
 
 env: []
 

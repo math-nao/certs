@@ -46,6 +46,10 @@ CERTS_DNS=""
 CERTS_IS_STAGING="false"
 CERTS_ARGS=""
 CERTS_CMD_TO_USE=""
+CERTS_PRE_CMD=""
+CERTS_POST_CMD=""
+CERTS_ONSUCCESS_CMD=""
+CERTS_ONERROR_CMD=""
 K8S_API_URI_NAMESPACE="namespaces/${NAMESPACE}"
 if [ "${ACME_MANAGE_ALL_NAMESPACES}" = "true" ]; then
   K8S_API_URI_NAMESPACE=""
@@ -149,6 +153,18 @@ get_cert_hash() {
 starter() {
   info "Initialize environment..."
 
+  if [ -n "${EAB_KID}" ] && [ -n "${EAB_HMAC_KEY}" ]; then
+    # use zerossl as default CA
+    acme.sh --set-default-ca --server zerossl
+    # register zerossl account
+    acme.sh --register-account \
+        --eab-kid "${EAB_KID}" \
+        --eab-hmac-key "${EAB_HMAC_KEY}"
+  else
+    # use letsencrypt as default CA
+    acme.sh --set-default-ca --server letsencrypt
+  fi
+
   local URI="/apis/extensions/v1beta1"
   if [ -n "${K8S_API_URI_NAMESPACE}" ]; then
     URI="${URI}/${K8S_API_URI_NAMESPACE}"
@@ -176,11 +192,49 @@ starter() {
 
       CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
       CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
+      if [ "${CERTS_CMD_TO_USE}" = "null" ]; then
+        CERTS_CMD_TO_USE=""
+      fi
+
+      CERTS_PRE_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/pre-cmd"')
+      if [ "${CERTS_PRE_CMD}" = "null" ]; then
+        CERTS_PRE_CMD=""
+      fi
+
+      CERTS_POST_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/post-cmd"')
+      if [ "${CERTS_POST_CMD}" = "null" ]; then
+        CERTS_POST_CMD=""
+      fi
+
+      CERTS_ONSUCCESS_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/on-success-cmd"')
+      if [ "${CERTS_ONSUCCESS_CMD}" = "null" ]; then
+        CERTS_ONSUCCESS_CMD=""
+      fi
+
+      CERTS_ONERROR_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/on-error-cmd"')
+      if [ "${CERTS_ONERROR_CMD}" = "null" ]; then
+        CERTS_ONERROR_CMD=""
+      fi
 
       local CERT_NAMESPACE=$(echo "${ingress}" | jq -rc '.metadata.namespace')
 
+      if [ -n "${ACME_NAMESPACES_WHITELIST}" ]; then
+        local is_namespace_found="false"
+        for namespace in ${ACME_NAMESPACES_WHITELIST}; do
+          if [ "${CERT_NAMESPACE}" = "${namespace}" ]; then
+            is_namespace_found="true"
+            break
+          fi
+        done
+
+        if [ "${is_namespace_found}" != "true" ]; then
+          info "Namespace '${CERT_NAMESPACE}' not in whitelist"
+          continue
+        fi
+      fi
+
       local IS_DNS_VALID="true"
-      if [ "${CERTS_DNS}" = "null" -o  "${CERTS_DNS}" = "" ]; then
+      if [ "${CERTS_DNS}" = "null" ] || [  "${CERTS_DNS}" = "" ]; then
         info "No dns configuration found"
         IS_DNS_VALID="false"
         # convert null to empty string
@@ -188,19 +242,19 @@ starter() {
       fi
 
       local IS_CMD_TO_USE_VALID="true"
-      if [ "${CERTS_CMD_TO_USE}" = "null" -o  "${CERTS_CMD_TO_USE}" = "" ]; then
+      if [ "${CERTS_CMD_TO_USE}" = "null" ] || [ "${CERTS_CMD_TO_USE}" = "" ]; then
         info "No cmd to use found"
         IS_CMD_TO_USE_VALID="false"
         # convert null to empty string
         CERTS_CMD_TO_USE=""
       fi
 
-      if [ "${IS_DNS_VALID}" = "false" -a "${IS_CMD_TO_USE_VALID}" = "false" ]; then
+      if [ "${IS_DNS_VALID}" = "false" ] && [ "${IS_CMD_TO_USE_VALID}" = "false" ]; then
         return
       fi
 
       CERTS_ARGS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/add-args"')
-      if [ "${CERTS_ARGS}" = "null" -o  "${CERTS_ARGS}" = "" ]; then
+      if [ "${CERTS_ARGS}" = "null" ] || [  "${CERTS_ARGS}" = "" ]; then
         info "No cmd args found"
         # convert null to empty string
         CERTS_ARGS=""
@@ -236,6 +290,8 @@ generate_cert() {
    " is_debug: ${ACME_DEBUG}," \
    " args: ${CERTS_ARGS}," \
    " cmd to use: ${CERTS_CMD_TO_USE}," \
+   " pre-cmd: ${CERTS_PRE_CMD}," \
+   " post-cmd: ${CERTS_POST_CMD}," \
    " name: ${NAME}," \
    " namespace: ${CERT_NAMESPACE}," \
    " domains: ${DOMAINS}"
@@ -304,12 +360,31 @@ generate_cert() {
   CURRENT_CERT_HASH=$(get_cert_hash "${DOMAIN_FOLDER}")
   debug "current cert hash: ${CURRENT_CERT_HASH}"
 
+  # pre-cmd
+  if [ -n "${CERTS_PRE_CMD}" ]; then
+    debug "Running pre-cmd: ${CERTS_PRE_CMD}"
+    pre_cmd_rc=0
+    eval "${CERTS_PRE_CMD}" || pre_cmd_rc=$? && true
+    info "pre-cmd return code: ${pre_cmd_rc}"
+  else
+    debug "No pre-cmd"
+  fi
+
   # generate certs
   debug "Running cmd: ${ACME_CMD}"
   RC=0
   eval "${ACME_CMD}" || RC=$? && true
-
   info "acme.sh return code: ${RC}"
+
+  # post-cmd
+  if [ -n "${CERTS_POST_CMD}" ]; then
+    debug "Running post-cmd: ${CERTS_POST_CMD}"
+    post_cmd_rc=0
+    eval "${CERTS_POST_CMD}" || post_cmd_rc=$? && true
+    info "post-cmd return code: ${post_cmd_rc}"
+  else
+    debug "No post-cmd"
+  fi
 
   if [ "${RC}" = "2" ]; then
     info "Certificate current. No renewal needed"
@@ -318,6 +393,9 @@ generate_cert() {
 
   if [ "${RC}" != "0" ]; then
     info "An acme.sh error occurred"
+    if [ -n "${CERTS_ONERROR_CMD}" ]; then
+      eval "$(format_cmd "${CERTS_ONERROR_CMD}")" || true
+    fi
     exit 1
   fi
 
@@ -336,6 +414,16 @@ generate_cert() {
     add_conf_to_secret "${CERT_NAMESPACE}" "${DOMAIN_FOLDER}"
   else
     info "No certificate change, nothing to do"
+  fi
+
+  # onsuccess-cmd
+  if [ -n "${CERTS_ONSUCCESS_CMD}" ]; then
+    debug "Running onsuccess-cmd: ${CERTS_ONSUCCESS_CMD}"
+    onsuccess_cmd_rc=0
+    eval "${CERTS_ONSUCCESS_CMD}" || onsuccess_cmd_rc=$? && true
+    info "onsuccess return code: ${onsuccess_cmd_rc}"
+  else
+    debug "No onsuccess-cmd"
   fi
 }
 
@@ -371,7 +459,7 @@ add_certs_to_secret() {
 
   debug "Status code: ${STATUS_CODE}"
 
-  if [ "${STATUS_CODE}" = "200" -o "${STATUS_CODE}" = "201" ]; then
+  if [ "${STATUS_CODE}" = "200" ] || [ "${STATUS_CODE}" = "201" ]; then
     info "Certs sucessfully added"
   else
     info "Certs not added"
@@ -445,13 +533,17 @@ add_conf_to_secret() {
 
   debug "Status code: ${STATUS_CODE}"
 
-  if [ "${STATUS_CODE}" = "200" -o "${STATUS_CODE}" = "201" ]; then
+  if [ "${STATUS_CODE}" = "200" ] || [ "${STATUS_CODE}" = "201" ]; then
     info "Conf sucessfully added"
   else
     info "Conf not added"
   fi
 
   rm -f "${SECRET_FILE}"
+}
+
+format_cmd() {
+  echo "$1" | sed -r "s@#domains#@${DOMAINS}@g"
 }
 
 source "${current_folder}/before.sh"

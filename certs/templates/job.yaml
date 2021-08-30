@@ -25,6 +25,8 @@ spec:
         env:
         - name: ACME_MANAGE_ALL_NAMESPACES
           value: {{ .Values.manageAllNamespaces | quote }}
+        - name: ACME_NAMESPACES_WHITELIST
+          value: {{ .Values.namespacesWhitelist | quote }}
         - name: ACME_DEMO_ENABLED
           value: {{ .Values.demo.enabled | quote }}
         - name: ACME_DEBUG
