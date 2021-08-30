@@ -180,10 +180,29 @@ starter() {
 
       CERTS_DNS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/dns"')
       CERTS_CMD_TO_USE=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/cmd-to-use"')
+      if [ "${CERTS_CMD_TO_USE}" = "null" ]; then
+        CERTS_CMD_TO_USE=""
+      fi
+
       CERTS_PRE_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/pre-cmd"')
+      if [ "${CERTS_PRE_CMD}" = "null" ]; then
+        CERTS_PRE_CMD=""
+      fi
+
       CERTS_POST_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/post-cmd"')
+      if [ "${CERTS_POST_CMD}" = "null" ]; then
+        CERTS_POST_CMD=""
+      fi
+
       CERTS_ONSUCCESS_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/on-success-cmd"')
+      if [ "${CERTS_ONSUCCESS_CMD}" = "null" ]; then
+        CERTS_ONSUCCESS_CMD=""
+      fi
+
       CERTS_ONERROR_CMD=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/on-error-cmd"')
+      if [ "${CERTS_ONERROR_CMD}" = "null" ]; then
+        CERTS_ONERROR_CMD=""
+      fi
 
       local CERT_NAMESPACE=$(echo "${ingress}" | jq -rc '.metadata.namespace')
 
@@ -203,7 +222,7 @@ starter() {
       fi
 
       local IS_DNS_VALID="true"
-      if [ "${CERTS_DNS}" = "null" -o  "${CERTS_DNS}" = "" ]; then
+      if [ "${CERTS_DNS}" = "null" ] || [  "${CERTS_DNS}" = "" ]; then
         info "No dns configuration found"
         IS_DNS_VALID="false"
         # convert null to empty string
@@ -211,19 +230,19 @@ starter() {
       fi
 
       local IS_CMD_TO_USE_VALID="true"
-      if [ "${CERTS_CMD_TO_USE}" = "null" -o  "${CERTS_CMD_TO_USE}" = "" ]; then
+      if [ "${CERTS_CMD_TO_USE}" = "null" ] || [ "${CERTS_CMD_TO_USE}" = "" ]; then
         info "No cmd to use found"
         IS_CMD_TO_USE_VALID="false"
         # convert null to empty string
         CERTS_CMD_TO_USE=""
       fi
 
-      if [ "${IS_DNS_VALID}" = "false" -a "${IS_CMD_TO_USE_VALID}" = "false" ]; then
+      if [ "${IS_DNS_VALID}" = "false" ] && [ "${IS_CMD_TO_USE_VALID}" = "false" ]; then
         return
       fi
 
       CERTS_ARGS=$(echo "${ingress}" | jq -rc '.metadata.annotations."acme.kubernetes.io/add-args"')
-      if [ "${CERTS_ARGS}" = "null" -o  "${CERTS_ARGS}" = "" ]; then
+      if [ "${CERTS_ARGS}" = "null" ] || [  "${CERTS_ARGS}" = "" ]; then
         info "No cmd args found"
         # convert null to empty string
         CERTS_ARGS=""
@@ -332,9 +351,9 @@ generate_cert() {
   # pre-cmd
   if [ -n "${CERTS_PRE_CMD}" ]; then
     debug "Running pre-cmd: ${CERTS_PRE_CMD}"
-    PRE_CMD_RC=0
-    eval "${CERTS_PRE_CMD}" || PRE_CMD_RC=$? && true
-    info "pre-cmd return code: ${PRE_CMD_RC}"
+    pre_cmd_rc=0
+    eval "${CERTS_PRE_CMD}" || pre_cmd_rc=$? && true
+    info "pre-cmd return code: ${pre_cmd_rc}"
   else
     debug "No pre-cmd"
   fi
@@ -348,9 +367,9 @@ generate_cert() {
   # post-cmd
   if [ -n "${CERTS_POST_CMD}" ]; then
     debug "Running post-cmd: ${CERTS_POST_CMD}"
-    POST_CMD_RC=0
-    eval "${CERTS_POST_CMD}" || POST_CMD_RC=$? && true
-    info "post-cmd return code: ${POST_CMD_RC}"
+    post_cmd_rc=0
+    eval "${CERTS_POST_CMD}" || post_cmd_rc=$? && true
+    info "post-cmd return code: ${post_cmd_rc}"
   else
     debug "No post-cmd"
   fi
@@ -385,8 +404,14 @@ generate_cert() {
     info "No certificate change, nothing to do"
   fi
 
+  # onsuccess-cmd
   if [ -n "${CERTS_ONSUCCESS_CMD}" ]; then
-    eval "$(format_cmd "${CERTS_ONSUCCESS_CMD}")" || true
+    debug "Running onsuccess-cmd: ${CERTS_ONSUCCESS_CMD}"
+    onsuccess_cmd_rc=0
+    eval "${CERTS_ONSUCCESS_CMD}" || onsuccess_cmd_rc=$? && true
+    info "onsuccess return code: ${onsuccess_cmd_rc}"
+  else
+    debug "No onsuccess-cmd"
   fi
 }
 
@@ -422,7 +447,7 @@ add_certs_to_secret() {
 
   debug "Status code: ${STATUS_CODE}"
 
-  if [ "${STATUS_CODE}" = "200" -o "${STATUS_CODE}" = "201" ]; then
+  if [ "${STATUS_CODE}" = "200" ] || [ "${STATUS_CODE}" = "201" ]; then
     info "Certs sucessfully added"
   else
     info "Certs not added"
@@ -496,7 +521,7 @@ add_conf_to_secret() {
 
   debug "Status code: ${STATUS_CODE}"
 
-  if [ "${STATUS_CODE}" = "200" -o "${STATUS_CODE}" = "201" ]; then
+  if [ "${STATUS_CODE}" = "200" ] || [ "${STATUS_CODE}" = "201" ]; then
     info "Conf sucessfully added"
   else
     info "Conf not added"
