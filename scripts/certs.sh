@@ -83,7 +83,13 @@ k8s_api_call() {
   local ARGS="$@"
 
   local RES_FILE=$(mktemp /tmp/res.XXXX)
-  curl -i -X "${METHOD}" --cacert "${CA_FILE}" -H "Authorization: Bearer $TOKEN" -H 'Accept: application/json' -H "Content-Type: application/json" https://${APISERVER}${URI} ${ARGS} -o ${RES_FILE}
+  local CONTENT_TYPE="application/json"
+  if [ "${METHOD}" = "PATCH" ]; then
+    # https://stackoverflow.com/a/63139804
+    CONTENT_TYPE="application/strategic-merge-patch+json"
+  fi
+  curl -i -X "${METHOD}" --cacert "${CA_FILE}" -H "Authorization: Bearer $TOKEN" -H 'Accept: application/json' -H "Content-Type: ${CONTENT_TYPE}" https://${APISERVER}${URI} ${ARGS} -o ${RES_FILE}
+  
   cat ${RES_FILE} > /dev/stderr
   local STATUS_CODE=$(cat ${RES_FILE} | grep 'HTTP/' | awk '{printf $2}')
   add_to_report "$(cat "${RES_FILE}")"
@@ -454,7 +460,7 @@ add_certs_to_secret() {
     STATUS_CODE=$(k8s_api_call "POST" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets" --data "@${SECRET_FILE}" 2>/dev/null)
   else
     info "Updating certs"
-    STATUS_CODE=$(k8s_api_call "PUT" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets/${CERTS_SECRET_NAME}" --data "@${SECRET_FILE}" 2>/dev/null)
+    STATUS_CODE=$(k8s_api_call "PATCH" "/api/v1/namespaces/${CERT_NAMESPACE}/secrets/${CERTS_SECRET_NAME}" --data "@${SECRET_FILE}" 2>/dev/null)
   fi
 
   debug "Status code: ${STATUS_CODE}"
