@@ -6,7 +6,7 @@ metadata:
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list", "update", "create"]
+  verbs: ["get", "list", "update", "create", "patch"]
   {{- if gt (len .Values.secretResourceNames) 0 }}
   resourceNames:
   {{- range .Values.secretResourceNames }}
