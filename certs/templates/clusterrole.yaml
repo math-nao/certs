@@ -14,7 +14,7 @@ rules:
     - {{ printf "%s-conf" . | quote }}
   {{- end }}  
   {{- end }}
-- apiGroups: ["extensions"]
+- apiGroups: ["networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["list"]
 {{- end -}}
