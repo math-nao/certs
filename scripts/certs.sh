@@ -177,10 +177,12 @@ starter() {
   fi
   URI="${URI}/ingresses"
 
+  info "Loading ingresses..."
   local RES_FILE=$(mktemp /tmp/init_env.XXXX)
   local STATUS_CODE=$(k8s_api_call "GET" "${URI}" 2>${RES_FILE})
 
   if [ "${STATUS_CODE}" = "200" ]; then
+    info "Ingresses loaded"
     format_res_file "${RES_FILE}"
     
     local INGRESSES_FILTERED=$(cat "${RES_FILE}" | jq -c '.items | .[] | select(.metadata.annotations."acme.kubernetes.io/enable"=="true")')
@@ -497,6 +499,11 @@ load_conf_from_secret() {
   fi
 
   rm -f "${RES_FILE}"
+  
+  if [ -z $STATUS_CODE ]; then
+    info "Error checking for existing configuration. Exiting to avoid potentially overwriting existing valid certs"
+    exit 1
+  fi
 }
 
 add_conf_to_secret() {
