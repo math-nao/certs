@@ -25,7 +25,7 @@ spec:
   - hosts:
     {{- with .Values.demo.hosts }}
 {{ toYaml . | indent 4 }}
-    {{- end -}}
+    {{- end }}
     secretName: {{ .Values.demo.secretName }}
   rules:
   {{- $main := . -}}
@@ -34,8 +34,11 @@ spec:
     http:
       paths:
         - path: /certs-demo-backend/?(.*)
+          pathType: Prefix
           backend:
-            serviceName: {{ template "helper.fullname" $main }}-demo-backend
-            servicePort: {{ $main.Values.demo.service.port }}
+            service:
+              name: {{ template "helper.fullname" $main }}-demo-backend
+              port:
+                number: {{ $main.Values.demo.service.port }}
   {{- end -}}
 {{- end }}
