@@ -8,6 +8,7 @@ This chart use the [acme.sh][acme-sh] script to generate Let's Encrypt certifcat
 
 # Compatibility
 Certs 1.x.y => Kubernetes < 1.22
+
 Certs 2.x.y => Kubernetes >= 1.22
 
 ## Ingress annotations
