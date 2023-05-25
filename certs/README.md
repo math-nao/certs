@@ -6,6 +6,10 @@
 
 This chart use the [acme.sh][acme-sh] script to generate Let's Encrypt certifcates with DNS validation only; it uses Kubernetes `Job` to get and renew certificates.
 
+# Compatibility
+Certs 1.x.y => Kubernetes < 1.22
+Certs 2.x.y => Kubernetes >= 1.22
+
 ## Ingress annotations
 
 Name  | Example | Description
