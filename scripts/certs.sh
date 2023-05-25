@@ -171,7 +171,7 @@ starter() {
     acme.sh --set-default-ca --server letsencrypt
   fi
 
-  local URI="/apis/extensions/v1beta1"
+  local URI="/apis/networking.k8s.io/v1"
   if [ -n "${K8S_API_URI_NAMESPACE}" ]; then
     URI="${URI}/${K8S_API_URI_NAMESPACE}"
   fi
