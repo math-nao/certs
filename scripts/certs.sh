@@ -140,7 +140,7 @@ get_domain_folder() {
   # in case of custom domain, try to find the domain folder
   if [ "${IS_CUSTOM_DOMAIN}" = "true" ]; then
     local LATEST_MODIFIED_FOLDER
-    LATEST_MODIFIED_FOLDER=$(ls -td /acme.sh/*.* -I account.conf -I http.header -I ca | head -1)
+    LATEST_MODIFIED_FOLDER=$(find /acme.sh ! -path /acme.sh -type d -name "*.*" | head -1)
     if [ -n "${LATEST_MODIFIED_FOLDER}" ]; then
       echo "${LATEST_MODIFIED_FOLDER}"
       return
