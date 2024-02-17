@@ -29,6 +29,8 @@ spec:
           value: {{ .Values.namespacesWhitelist | quote }}
         - name: ACME_DEMO_ENABLED
           value: {{ .Values.demo.enabled | quote }}
+        - name: ACME_GATEWAY_ENABLED
+          value: {{ .Values.enableGateway | quote }}
         - name: ACME_DEBUG
           value: {{ .Values.debug | quote }}
         {{- with .Values.env }}

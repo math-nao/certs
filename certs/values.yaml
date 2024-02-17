@@ -8,7 +8,7 @@ service:
 image:
   registry: mathnao
   repository: certs
-  tag: 2.0.1
+  tag: 2.1.0
 
 schedule: "0 0,12 * * *"
 
@@ -28,6 +28,8 @@ manageAllNamespaces: false
 
 namespacesWhitelist: ""
 
+enableGateway: false
+
 env: []
 
 secretResourceNames: []
@@ -42,4 +44,6 @@ demo:
   hosts:
   - "example.com"
   ingress:
+    annotations: {}
+  gateway:
     annotations: {}

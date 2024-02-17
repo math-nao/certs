@@ -1,0 +1,24 @@
+{{- if and .Values.demo.enabled .Values.enableGateway -}}
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ template "helper.fullname" . }}-demo-backend
+  labels:
+    app: {{ template "helper.name" . }}-demo-backend
+    chart: {{ template "helper.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+  - name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: {{ .Values.demo.secretName }}
+{{- end }}

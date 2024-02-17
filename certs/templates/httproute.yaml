@@ -1,0 +1,36 @@
+{{- if and .Values.demo.enabled .Values.enableGateway -}}
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: {{ template "helper.fullname" . }}-demo-backend
+  labels:
+    app: {{ template "helper.name" . }}-demo-backend
+    chart: {{ template "helper.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    acme.kubernetes.io/enable: "true"
+    acme.kubernetes.io/dns: "dns_gd"
+    acme.kubernetes.io/staging: "true"
+    acme.kubernetes.io/debug: "true"
+    acme.kubernetes.io/add-args: "--keylength ec-256"
+    acme.kubernetes.io/cmd-to-use: ""
+{{- with .Values.demo.gateway.annotations }}
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+  parentRefs:
+  - name: {{ template "helper.fullname" . }}-demo-backend
+  hostnames:
+  {{- with .Values.demo.hosts }}
+{{ toYaml . | indent 2 }}
+  {{- end }}
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /certs-demo-backend/
+    backendRefs:
+    - name: {{ template "helper.fullname" . }}-demo-backend
+      port: {{ .Values.demo.service.port }}
+{{- end }}
