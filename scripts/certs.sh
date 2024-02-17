@@ -5,7 +5,7 @@ set -e
 
 echo "Version: ${CERTS_VERSION}"
 echo "wait few seconds in case ingress rule is deployed at the same as it is in demo"
-#sleep 30
+sleep 30
 
 current_folder=$(dirname "$(readlink -f "$0")")
 report_file="${current_folder}/report.log"
