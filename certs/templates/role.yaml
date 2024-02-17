@@ -17,4 +17,12 @@ rules:
 - apiGroups: ["networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["list"]
+{{- if .Values.enableGateway }}
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["gateways"]
+  verbs: ["list", "get"]
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["httproutes"]
+  verbs: ["list"]
+{{- end }}
 {{- end -}}

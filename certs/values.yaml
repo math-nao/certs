@@ -28,6 +28,8 @@ manageAllNamespaces: false
 
 namespacesWhitelist: ""
 
+enableGateway: false
+
 env: []
 
 secretResourceNames: []
@@ -42,4 +44,6 @@ demo:
   hosts:
   - "example.com"
   ingress:
+    annotations: {}
+  gateway:
     annotations: {}
