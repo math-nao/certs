@@ -174,7 +174,9 @@ starter() {
   
   parse_ingresses
 
-  parse_httproutes
+  if [ "${ACME_GATEWAY_ENABLED}" = "true" ]; then
+    parse_httproutes
+  fi
 }
 
 parse_ingresses() {
