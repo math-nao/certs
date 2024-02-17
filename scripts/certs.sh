@@ -128,13 +128,14 @@ get_domain_folder() {
   fi
 
   domain_folder="/acme.sh/${domain_name}"
-  
-  if [ "${is_ecc_certificate}" = "true" ]; then
-    domain_folder="${domain_folder}_ecc"
-  fi
 
   if [ -d "${domain_folder}" ]; then
     echo "${domain_folder}"
+    return
+  fi
+
+  if [ -d "${domain_folder}_ecc" ]; then
+    echo "${domain_folder}_ecc"
     return
   fi
 
