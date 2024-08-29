@@ -16,6 +16,10 @@ spec:
       labels:
         app: {{ template "helper.name" . }}
         release: {{ .Release.Name }}
+      annotations:
+        {{- with .Values.job.annotations }}
+{{ toYaml . | indent 8 }}
+        {{- end }}
     spec:
       serviceAccountName: {{ template "helper.fullname" . }}
       containers:

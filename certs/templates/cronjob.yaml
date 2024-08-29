@@ -22,6 +22,11 @@ spec:
       activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
       ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
       template:
+        metadata:
+          annotations:
+            {{- with .Values.job.annotations }}
+{{ toYaml . | indent 12 }}
+            {{- end }}
         spec:
           serviceAccountName: {{ template "helper.fullname" . }}
           containers:

@@ -1,6 +1,6 @@
 FROM neilpang/acme.sh:latest
 
-ENV CERTS_VERSION=2.1.0
+ENV CERTS_VERSION=2.1.1
 
 WORKDIR /root/
 
