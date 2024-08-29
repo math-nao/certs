@@ -96,6 +96,12 @@ k8s_api_call() {
   status_code=$(cat "${res_file}" | grep 'HTTP/' | awk '{printf $2}')
   add_to_report "$(cat "${res_file}")"
   rm -f "${res_file}"
+
+  if [ -z $status_code ]; then
+    info "Error loading k8s api ${uri}. Exiting to avoid potentially overwriting existing valid certs"
+    exit 1
+  fi
+
   echo "${status_code}"
 }
 
