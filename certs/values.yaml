@@ -34,6 +34,9 @@ env: []
 
 secretResourceNames: []
 
+job:
+  annotations: {}
+
 demo:
   enabled: false
   image: mathnao/light-test-server
