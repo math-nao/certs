@@ -651,6 +651,7 @@ add_certs_to_secret() {
 
   secret_json='{}'
   secret_json=$(echo "${secret_json}" | jq --arg kind "Secret" '. + {kind: $kind}')
+  secret_json=$(echo "${secret_json}" | jq --arg type "kubernetes.io/tls" '. + {type: $type }')
   secret_json=$(echo "${secret_json}" | jq --arg name "${CERTS_SECRET_NAME}" '. + {metadata: { name: $name }}')
   secret_json=$(echo "${secret_json}" | jq '. + {data: {}}')
   secret_json=$(echo "${secret_json}" | jq --arg cacert "$(get_file_data_for_secret_json "${ACME_CA_FILE}")" '. * {data: {"ca.crt": $cacert}}')
