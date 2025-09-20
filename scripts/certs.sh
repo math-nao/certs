@@ -664,7 +664,11 @@ add_certs_to_secret() {
 
   debug "Status code checker: ${status_code_checker}"
   
+  format_res_file "${res_file}"
   secret_type=$(cat "${res_file}" | jq -r '.type')
+  
+  debug "Secret type: ${secret_type}"
+
   if [ "${status_code_checker}" = "200" ] && [ "${secret_type}" = "kubernetes.io/tls" ]; then
     info "Secret has been found and it is a kubernetes.io/tls type. Need to remove it due to issue introduced in certs 2.1.2 (kubernetes.io/tls type secrets are immutable; use opaque type secrets because patch is allowed)"
     
