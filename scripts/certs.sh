@@ -663,24 +663,6 @@ add_certs_to_secret() {
   status_code_checker=$(k8s_api_call "GET" "/api/v1/namespaces/${cert_namespace}/secrets/${CERTS_SECRET_NAME}" 2>"${res_file}")
 
   debug "Status code checker: ${status_code_checker}"
-  
-  format_res_file "${res_file}"
-  secret_type=$(cat "${res_file}" | jq -r '.type')
-  
-  debug "Secret type: ${secret_type}"
-
-  if [ "${status_code_checker}" = "200" ] && [ "${secret_type}" = "kubernetes.io/tls" ]; then
-    info "Secret has been found and it is a kubernetes.io/tls type. Need to remove it due to issue introduced in certs 2.1.2 (kubernetes.io/tls type secrets are immutable; use opaque type secrets because patch is allowed)"
-    
-    status_code_delete=$(k8s_api_call "DELETE" "/api/v1/namespaces/${cert_namespace}/secrets" 2>/dev/null)
-    
-    debug "Status code delete: ${status_code_delete}"
-    
-    if [ "${status_code_delete}" = "200" ]; then
-      debug "set status code checker to 404 to force adding certs"
-      status_code_checker="404"
-    fi
-  fi
 
   status_code=""
   if [ "${status_code_checker}" != "200" ]; then
