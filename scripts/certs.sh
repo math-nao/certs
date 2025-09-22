@@ -651,19 +651,22 @@ add_certs_to_secret() {
 
   secret_json='{}'
   secret_json=$(echo "${secret_json}" | jq --arg kind "Secret" '. + {kind: $kind}')
-  secret_json=$(echo "${secret_json}" | jq --arg type "kubernetes.io/tls" '. + {type: $type }')
   secret_json=$(echo "${secret_json}" | jq --arg name "${CERTS_SECRET_NAME}" '. + {metadata: { name: $name }}')
   secret_json=$(echo "${secret_json}" | jq '. + {data: {}}')
   secret_json=$(echo "${secret_json}" | jq --arg cacert "$(get_file_data_for_secret_json "${ACME_CA_FILE}")" '. * {data: {"ca.crt": $cacert}}')
   secret_json=$(echo "${secret_json}" | jq --arg tlscert "$(get_file_data_for_secret_json "${ACME_FULLCHAIN_FILE}")" '. * {data: {"tls.crt": $tlscert}}')
   secret_json=$(echo "${secret_json}" | jq --arg tlskey "$(get_file_data_for_secret_json "${ACME_KEY_FILE}")" '. * {data: {"tls.key": $tlskey}}')
 
-  echo -e "${secret_json}" > "${secret_file}"
-
   res_file=$(mktemp /tmp/add_cert.XXXX)
   status_code_checker=$(k8s_api_call "GET" "/api/v1/namespaces/${cert_namespace}/secrets/${CERTS_SECRET_NAME}" 2>"${res_file}")
 
   debug "Status code checker: ${status_code_checker}"
+  
+  if [ "${status_code_checker}" != "200" ]; then
+    secret_json=$(echo "${secret_json}" | jq --arg type "kubernetes.io/tls" '. + {type: $type }')
+  fi
+
+  echo -e "${secret_json}" > "${secret_file}"
 
   status_code=""
   if [ "${status_code_checker}" != "200" ]; then
